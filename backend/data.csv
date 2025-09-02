@@ -1,6 +1,9 @@
-ItemID,Type,Vendor,LotNo,SupplyDate,WarrantyEnd,LastInspection
-QR001,Elastic Rail Clip,ABC Steels,LOT101,2020-05-01,2027-05-01,2023-06-01
-QR002,Rail Pad,XYZ Polymers,LOT202,2022-08-15,2025-08-15,2023-12-20
-QR003,Liner,PQR Metals,LOT303,2021-01-10,2024-01-10,2022-06-01
-QR004,Sleeper,LMN Concrete,LOT404,2023-03-05,2026-03-05,2024-08-20
-QR005,Elastic Rail Clip,DEF Steels,LOT505,2020-11-20,2023-11-20,2021-11-20
+ItemID,Name,Category,Location,Status,WarrantyEnd,LastInspection,PredictiveScore,QRCode
+1,Industrial Generator #A01,Power Equipment,Sector A - Building 1,healthy,2025-06-15,2024-08-15,85,QR_GEN_A01_2024
+2,HVAC System #B02,Climate Control,Sector B - Building 2,warning,2024-12-30,2024-07-20,65,QR_HVAC_B02_2024
+3,Server Rack #C03,IT Equipment,Data Center - Floor 3,critical,2024-11-15,2024-06-10,25,QR_SRV_C03_2024
+4,Water Pump #D04,Utilities,Basement - Utility Room,maintenance,2025-03-20,2024-08-30,70,QR_PUMP_D04_2024
+5,Emergency Generator #A02,Power Equipment,Sector A - Building 2,healthy,2025-08-10,2024-09-01,90,QR_GEN_A02_2024
+6,Chiller Unit #B03,Climate Control,Sector B - Rooftop,warning,2024-10-15,2023-12-20,45,QR_CHILL_B03_2024
+7,Network Switch #C04,IT Equipment,Data Center - Floor 1,healthy,2025-12-31,2024-08-25,78,QR_NET_C04_2024
+8,Fire Pump #D05,Safety Equipment,Basement - Safety Room,critical,2024-09-30,2023-11-15,30,QR_FIRE_D05_2024
