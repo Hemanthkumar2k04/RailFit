@@ -1073,7 +1073,7 @@ def update_component(component_id):
         query = f'UPDATE components SET {", ".join(updates)} WHERE id = ?'
         
         result = conn.execute(query, params)
-        conn.commit()
+        conn.commit();
         
         if result.rowcount == 0:
             conn.close()
@@ -1174,6 +1174,10 @@ def get_batch_components(lot_number):
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/health")
+def health():
+    return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

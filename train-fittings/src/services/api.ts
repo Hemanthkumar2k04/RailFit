@@ -1,6 +1,8 @@
 // src/services/api.ts
 import { supabase } from '../lib/supabase';
 
+export const API_BASE_URL = "http://localhost:5000";
+
 export interface SupabaseAsset {
   id: string;
   item_id: string;
@@ -85,21 +87,10 @@ export const transformAsset = (supabaseAsset: SupabaseAsset): Asset => {
 
 export class ApiService {
   static async fetchAllAssets(): Promise<Asset[]> {
-    try {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      return (data || []).map(transformAsset);
-    } catch (error) {
-      console.error('Error fetching assets:', error);
-      throw new Error('Failed to fetch assets from Supabase');
-    }
+    const response = await fetch(`${API_BASE_URL}/api/components`);
+    const data = await response.json();
+    // Transform data as needed
+    return data.database_components.map(transformAsset);
   }
 
   static async fetchAssetById(itemId: string): Promise<Asset> {
@@ -262,14 +253,12 @@ export class ApiService {
   // Health check for Supabase connection
   static async healthCheck(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('count')
-        .limit(1);
-
-      return !error;
+      const response = await fetch(`${API_BASE_URL}/api/health`);
+      if (!response.ok) return false;
+      const data = await response.json();
+      return data.status === "ok";
     } catch (error) {
-      console.error('Supabase health check failed:', error);
+      console.error('Flask health check failed:', error);
       return false;
     }
   }
