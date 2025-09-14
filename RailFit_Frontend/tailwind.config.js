@@ -18,90 +18,38 @@ export default {
     },
     extend: {
       colors: {
-        // Existing shadcn/ui colors (preserved)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-
-        // RailFIT Indian Railways Color Scheme
         primary: {
-          DEFAULT: "#003f7f", // Indian Railways Blue
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#003f7f", // Main IR Blue
-          600: "#002d5c",
-          700: "#001d3d",
-          800: "#001427",
-          900: "#000a14",
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "#64748b", // Neutral gray
-          foreground: "#f8fafc",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
-
-        // Status Colors
-        success: {
-          DEFAULT: "#10b981", // Green for healthy assets
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-          foreground: "#ffffff",
-        },
-        warning: {
-          DEFAULT: "#f59e0b", // Amber for maintenance
-          50: "#fffbeb",
-          100: "#fef3c7",
-          500: "#f59e0b",
-          600: "#d97706",
-          700: "#b45309",
-          foreground: "#ffffff",
-        },
-        danger: {
-          DEFAULT: "#ef4444", // Red for critical alerts
-          50: "#fef2f2",
-          100: "#fee2e2",
-          500: "#ef4444",
-          600: "#dc2626",
-          700: "#b91c1c",
-          foreground: "#ffffff",
-        },
-
-        // Railway specific colors
-        rail: {
-          blue: "#003f7f",
-          orange: "#ff6600", // IR Orange accent
-          gray: "#64748b",
-          light: "#f8fafc",
-        },
-
-        // Legacy colors (preserved for compatibility)
         destructive: {
-          DEFAULT: "#ef4444",
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#64748b",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "#ffffff",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "#ffffff",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
       borderRadius: {
