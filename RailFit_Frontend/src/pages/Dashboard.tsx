@@ -97,41 +97,47 @@ export default function Dashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4 mt-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Excellent (90-100%)</span>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="w-[65%] h-full bg-slate-600"></div>
-                                    </div>
-                                    <span className="text-sm text-muted-foreground font-medium">1,851 assets</span>
+                        <div className="space-y-6 mt-4">
+                            {/* Single Stacked Progress Bar */}
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium text-center">Asset Health Distribution</div>
+                                <div className="w-full h-4 bg-muted rounded-full overflow-hidden flex">
+                                    <div className="h-full bg-slate-600 flex-none" style={{ width: '65.2%' }} title="Excellent: 1,851 assets"></div>
+                                    <div className="h-full bg-slate-500 flex-none" style={{ width: '28.3%' }} title="Good: 803 assets"></div>
+                                    <div className="h-full bg-slate-400 flex-none" style={{ width: '6.2%' }} title="Fair: 175 assets"></div>
+                                    <div className="h-full bg-slate-700 flex-none" style={{ width: '0.3%' }} title="Critical: 18 assets"></div>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Good (75-89%)</span>
+
+                            {/* Legend */}
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="w-[28%] h-full bg-slate-500"></div>
+                                    <div className="w-3 h-3 bg-slate-600 rounded-sm"></div>
+                                    <div className="flex-1">
+                                        <div className="text-xs font-medium">Excellent (90-100%)</div>
+                                        <div className="text-xs text-muted-foreground">1,851 assets</div>
                                     </div>
-                                    <span className="text-sm text-muted-foreground font-medium">803 assets</span>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Fair (60-74%)</span>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="w-[6%] h-full bg-slate-400"></div>
+                                    <div className="w-3 h-3 bg-slate-500 rounded-sm"></div>
+                                    <div className="flex-1">
+                                        <div className="text-xs font-medium">Good (75-89%)</div>
+                                        <div className="text-xs text-muted-foreground">803 assets</div>
                                     </div>
-                                    <span className="text-sm text-muted-foreground font-medium">175 assets</span>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Critical (&lt;60%)</span>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                        <div className="w-[1%] h-full bg-slate-700"></div>
+                                    <div className="w-3 h-3 bg-slate-400 rounded-sm"></div>
+                                    <div className="flex-1">
+                                        <div className="text-xs font-medium">Fair (60-74%)</div>
+                                        <div className="text-xs text-muted-foreground">175 assets</div>
                                     </div>
-                                    <span className="text-sm text-muted-foreground font-medium">18 assets</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-slate-700 rounded-sm"></div>
+                                    <div className="flex-1">
+                                        <div className="text-xs font-medium">Critical (&lt;60%)</div>
+                                        <div className="text-xs text-muted-foreground">18 assets</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -260,158 +266,6 @@ export default function Dashboard() {
                 </Card>
             </div>
 
-            {/* Recent Activity Feed */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Activity Feed</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {/* Inspection Activity */}
-                        <div className="flex items-start space-x-3 p-3 rounded-md border">
-                            <div className="h-2 w-2 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium">
-                                    New inspection completed - Asset RF-2024-001234
-                                </p>
-                                <p className="text-xs text-muted-foreground">2 minutes ago</p>
-                            </div>
-                        </div>
-
-                        {/* Maintenance Alert */}
-                        <div className="flex items-start space-x-3 p-3 rounded-md border">
-                            <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium">
-                                    Maintenance alert triggered - Asset RF-2024-000567
-                                </p>
-                                <p className="text-xs text-muted-foreground">15 minutes ago</p>
-                            </div>
-                        </div>
-
-                        {/* QR Generation */}
-                        <div className="flex items-start space-x-3 p-3 rounded-md border">
-                            <div className="h-2 w-2 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium">
-                                    QR codes generated for 50 new assets
-                                </p>
-                                <p className="text-xs text-muted-foreground">1 hour ago</p>
-                            </div>
-                        </div>
-
-                        {/* System Sync */}
-                        <div className="flex items-start space-x-3 p-3 rounded-md border">
-                            <div className="h-2 w-2 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium">
-                                    UDM sync completed successfully
-                                </p>
-                                <p className="text-xs text-muted-foreground">2 hours ago</p>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Railway Operations Summary & Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                {/* Recent Railway Operations */}
-                <Card className="lg:col-span-2">
-                    <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
-                        <CardTitle className="flex items-center text-primary">
-                            🚉 Recent Railway Operations
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4 mt-4">
-                            <div className="flex items-start space-x-3 p-3 rounded-md border">
-                                <div className="h-2 w-2 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium">
-                                        Locomotive WAP-7 #30427 - Preventive maintenance completed
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Northern Railway, New Delhi - 5 minutes ago</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-3 p-3 rounded-md border">
-                                <div className="h-2 w-2 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium">
-                                        Track Section NK-127: AI detected wear pattern anomaly
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Central Railway, Mumbai - 12 minutes ago</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-3 p-3 rounded-md border border-primary/20 bg-primary/5">
-                                <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium">
-                                        QR Code scan completed for Signal Box SB-4521
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Southern Railway, Chennai - 28 minutes ago</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-3 p-3 rounded-md border">
-                                <div className="h-2 w-2 rounded-full bg-slate-400 mt-2 flex-shrink-0 animate-pulse" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium">
-                                        Critical alert: Overhead line voltage fluctuation detected
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Eastern Railway, Kolkata - 45 minutes ago</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Quick Actions Panel */}
-                <Card>
-                    <CardHeader className="bg-gradient-to-r from-success/5 to-success/10">
-                        <CardTitle className="flex items-center text-success">
-                            ⚡ Quick Actions
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3 mt-4">
-                            <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors">
-                                <div className="text-xl">📱</div>
-                                <div>
-                                    <div className="text-sm font-medium">QR Code Scanner</div>
-                                    <div className="text-xs text-muted-foreground">Scan asset QR codes</div>
-                                </div>
-                            </button>
-
-                            <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors">
-                                <div className="text-xl">📋</div>
-                                <div>
-                                    <div className="text-sm font-medium">New Inspection</div>
-                                    <div className="text-xs text-muted-foreground">Start asset inspection</div>
-                                </div>
-                            </button>
-
-                            <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors">
-                                <div className="text-xl">🔧</div>
-                                <div>
-                                    <div className="text-sm font-medium">Maintenance Log</div>
-                                    <div className="text-xs text-muted-foreground">Record maintenance</div>
-                                </div>
-                            </button>
-
-                            <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors">
-                                <div className="text-xl">🚨</div>
-                                <div>
-                                    <div className="text-sm font-medium">Report Issue</div>
-                                    <div className="text-xs text-muted-foreground">Emergency reporting</div>
-                                </div>
-                            </button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
         </div>
     )
 }

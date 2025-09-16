@@ -146,8 +146,8 @@ export default function AssetList() {
                     <p className="text-rail-gray mt-1">Comprehensive railway infrastructure asset tracking and management</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button className="bg-success hover:bg-success/90">
-                        <Plus className="h-4 w-4 mr-2" />
+                    <Button className="bg-white text-black hover:bg-gray-100">
+                        <Plus className="h-4 w-4 mr-2 " />
                         Add New Asset
                     </Button>
                     <Button variant="outline">
