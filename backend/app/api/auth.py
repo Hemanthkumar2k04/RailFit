@@ -1,41 +1,101 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import timedelta
-from app.core.database import get_db
-from app.core.security import verify_password, get_password_hash, create_access_token, verify_token
-from app.schemas.user import UserCreate, User
-from app.schemas.auth import Token
-from app.models.user import User as UserModel
+from app.core.security import verify_password, create_access_token, verify_token
 from app.core.config import settings
-from sqlalchemy import select
-import uuid
+import httpx
+from typing import Optional, Dict, Any
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
 
-async def get_user_by_email(db: AsyncSession, email: str):
-    """Get user by email"""
-    result = await db.execute(select(UserModel).where(UserModel.email == email))
-    return result.scalars().first()
+# Supabase configuration
+SUPABASE_URL = "https://nlxrpnjccouogrfbbgmk.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5seHJwbmpjY291b2dyZmJiZ21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzM2NjQsImV4cCI6MjA3Mzk0OTY2NH0.begglCbsqiTX7Sop_09BpTRHw31NGm9nThoTkk4aEJE"
 
-async def get_user_by_id(db: AsyncSession, user_id: int):
-    """Get user by ID"""
-    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
-    return result.scalars().first()
+# Pydantic models
+class User(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    role: str
 
-async def authenticate_user(db: AsyncSession, email: str, password: str):
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    user: User
+
+async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Get user by email using Supabase REST API"""
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = await client.get(
+            f"{SUPABASE_URL}/rest/v1/users",
+            headers=headers,
+            params={"email": f"eq.{email}"}
+        )
+        
+        if response.status_code == 200:
+            users = response.json()
+            return users[0] if users else None
+        return None
+
+async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Get user by ID using Supabase REST API"""
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = await client.get(
+            f"{SUPABASE_URL}/rest/v1/users",
+            headers=headers,
+            params={"user_id": f"eq.{user_id}"}
+        )
+        
+        if response.status_code == 200:
+            users = response.json()
+            return users[0] if users else None
+        return None
+
+async def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     """Authenticate user with email and password"""
-    user = await get_user_by_email(db, email)
+    user = await get_user_by_email(email)
     if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
+        return None
+    
+    # For demo purposes, accept some simple passwords
+    # In production, you'd verify against the actual password_hash
+    demo_passwords = {
+        "admin@railfit.com": "admin123",
+        "manager@railfit.com": "manager123", 
+        "inspector@railfit.com": "inspector123"
+    }
+    
+    if email in demo_passwords and password == demo_passwords[email]:
+        return user
+    
+    # Also check against the actual hash if available
+    if user.get("password_hash") and verify_password(password, user["password_hash"]):
+        return user
+    
+    return None
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """Get current authenticated user"""
     credentials_exception = HTTPException(
@@ -49,46 +109,20 @@ async def get_current_user(
     if payload is None:
         raise credentials_exception
     
-    user_id: int = payload.get("user_id")
+    user_id: str = payload.get("user_id")
     if user_id is None:
         raise credentials_exception
     
-    user = await get_user_by_id(db, user_id=user_id)
+    user = await get_user_by_id(user_id=user_id)
     if user is None:
         raise credentials_exception
     
     return user
 
-@router.post("/register", response_model=User)
-async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Register a new user"""
-    # Check if user already exists
-    existing_user = await get_user_by_email(db, user.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create new user
-    hashed_password = get_password_hash(user.password)
-    db_user = UserModel(
-        name=user.name,
-        email=user.email,
-        hashed_password=hashed_password,
-        role=user.role
-    )
-    
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
-    
-    return db_user
-
 @router.post("/login", response_model=Token)
-async def login_user(email: str, password: str, db: AsyncSession = Depends(get_db)):
+async def login_user(login_data: LoginRequest):
     """Login user and return JWT token"""
-    user = await authenticate_user(db, email, password)
+    user = await authenticate_user(login_data.email, login_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -96,31 +130,30 @@ async def login_user(email: str, password: str, db: AsyncSession = Depends(get_d
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
-    
     access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
     access_token = create_access_token(
-        data={"user_id": user.id, "email": user.email, "role": user.role},
+        data={"user_id": user["user_id"], "email": user["email"], "role": user["role"]},
         expires_delta=access_token_expires
     )
     
     return {
         "access_token": access_token,
-        "token_type": "bearer",
+        "token_type": "bearer", 
         "expires_in": settings.jwt_access_token_expire_minutes * 60,
         "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "role": user.role
+            "user_id": user["user_id"],
+            "name": user["name"],
+            "email": user["email"],
+            "role": user["role"]
         }
     }
 
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: UserModel = Depends(get_current_user)):
+async def read_users_me(current_user: Dict[str, Any] = Depends(get_current_user)):
     """Get current user info"""
-    return current_user
+    return {
+        "user_id": current_user["user_id"],
+        "name": current_user["name"],
+        "email": current_user["email"],
+        "role": current_user["role"]
+    }

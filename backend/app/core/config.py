@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # JWT Config
     jwt_secret_key: str = os.getenv("JWT_SECRET_KEY")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-    jwt_access_token_expire_hours: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_HOURS", "24"))
+    jwt_access_token_expire_minutes: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
     
     # Security
     bcrypt_rounds: int = 12
@@ -56,8 +56,7 @@ class Settings(BaseSettings):
                 raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
         return True
     
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 # Create global settings instance
 settings = Settings()
