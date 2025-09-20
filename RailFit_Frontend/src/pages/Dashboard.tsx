@@ -33,7 +33,7 @@ export default function Dashboard() {
       .then(data => setDashboard(data));
   }, []);
 
-  if (!dashboard) return <div>Loading...</div>;
+  if (!dashboard || !dashboard.assetDistribution) return <div>Loading...</div>;
 
   return (
     <div className="p-6 space-y-8">
@@ -111,36 +111,36 @@ export default function Dashboard() {
               <div className="text-sm font-medium text-center">Asset Health Distribution</div>
               <div className="w-full h-4 bg-muted rounded-full overflow-hidden flex">
                 <div className="h-full bg-slate-600 flex-none"
-                   style={{ width: `${(dashboard.assetDistribution.excellent / dashboard.totalAssets) * 100}%` }}
-                   title={`Excellent: ${dashboard.assetDistribution.excellent} assets`}/>
+                   style={{ width: `${((dashboard.assetDistribution?.excellent ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
+                   title={`Excellent: ${dashboard.assetDistribution?.excellent ?? 0} assets`}/>
                 <div className="h-full bg-slate-500 flex-none"
-                   style={{ width: `${(dashboard.assetDistribution.good / dashboard.totalAssets) * 100}%` }}
-                   title={`Good: ${dashboard.assetDistribution.good} assets`}/>
+                   style={{ width: `${((dashboard.assetDistribution?.good ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
+                   title={`Good: ${dashboard.assetDistribution?.good ?? 0} assets`}/>
                 <div className="h-full bg-slate-400 flex-none"
-                   style={{ width: `${(dashboard.assetDistribution.fair / dashboard.totalAssets) * 100}%` }}
-                   title={`Fair: ${dashboard.assetDistribution.fair} assets`}/>
+                   style={{ width: `${((dashboard.assetDistribution?.fair ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
+                   title={`Fair: ${dashboard.assetDistribution?.fair ?? 0} assets`}/>
                 <div className="h-full bg-slate-700 flex-none"
-                   style={{ width: `${(dashboard.assetDistribution.critical / dashboard.totalAssets) * 100}%` }}
-                   title={`Critical: ${dashboard.assetDistribution.critical} assets`}/>
+                   style={{ width: `${((dashboard.assetDistribution?.critical ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
+                   title={`Critical: ${dashboard.assetDistribution?.critical ?? 0} assets`}/>
               </div>
             </div>
             {/* Legend */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-600 rounded-sm"></div>
-                <div>Excellent ({dashboard.assetDistribution.excellent} assets)</div>
+                <div>Excellent ({dashboard.assetDistribution?.excellent ?? 0} assets)</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-500 rounded-sm"></div>
-                <div>Good ({dashboard.assetDistribution.good} assets)</div>
+                <div>Good ({dashboard.assetDistribution?.good ?? 0} assets)</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-400 rounded-sm"></div>
-                <div>Fair ({dashboard.assetDistribution.fair} assets)</div>
+                <div>Fair ({dashboard.assetDistribution?.fair ?? 0} assets)</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-700 rounded-sm"></div>
-                <div>Critical ({dashboard.assetDistribution.critical} assets)</div>
+                <div>Critical ({dashboard.assetDistribution?.critical ?? 0} assets)</div>
               </div>
             </div>
           </div>

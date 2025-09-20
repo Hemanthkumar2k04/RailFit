@@ -31,15 +31,25 @@ export default function InspectionHistory() {
 
   useEffect(() => {
     fetch('http://localhost:5000/api/fittings')
-      .then(res => res.json())
-      .then(json => setData(json));
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(json => {
+        // Ensure we set an array, even if the API returns something else
+        setData(Array.isArray(json) ? json : []);
+      })
+      .catch(error => {
+        console.error('Error fetching fittings:', error);
+        setData([]); // Set empty array on error
+      });
   }, []);
 
-  const filtered = data.filter(
+  const filtered = (Array.isArray(data) ? data : []).filter(
     fit =>
-      fit.Fitting_ID.toLowerCase().includes(search.toLowerCase()) ||
-      fit.QR_Code.toLowerCase().includes(search.toLowerCase()) ||
-      fit.Inspection_Result.toLowerCase().includes(search.toLowerCase())
+      fit.Fitting_ID?.toLowerCase().includes(search.toLowerCase()) ||
+      fit.QR_Code?.toLowerCase().includes(search.toLowerCase()) ||
+      fit.Inspection_Result?.toLowerCase().includes(search.toLowerCase())
   );
   
 

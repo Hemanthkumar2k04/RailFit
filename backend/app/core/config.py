@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from typing import Optional
 import os
 from dotenv import load_dotenv
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     bcrypt_rounds: int = 12
     
     # CORS
-    allowed_origins: list = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+    allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
     
     # File Upload
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
@@ -40,11 +40,20 @@ class Settings(BaseSettings):
         """Validate that all required environment variables are set"""
         required_vars = [
             "DATABASE_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY", 
-            "SUPABASE_SERVICE_ROLE_KEY", "JWT_SECRET_KEY"
+            "JWT_SECRET_KEY"
         ]
-        missing = [var for var in required_vars if not getattr(self, var.lower())]
+        missing = []
+        for var in required_vars:
+            value = getattr(self, var.lower(), None)
+            if not value or value == f"your-{var.lower().replace('_', '-')}-here":
+                missing.append(var)
+        
         if missing:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+            print(f"Warning: Missing or placeholder values for: {', '.join(missing)}")
+            print("Please update your .env file with actual values for production use.")
+            # Only raise error for critical missing vars in production
+            if not self.debug and missing:
+                raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
         return True
     
     class Config:

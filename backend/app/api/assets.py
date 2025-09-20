@@ -121,3 +121,4 @@ async def get_asset_qr_code(
         "asset_id": asset_id,
         "qr_code": asset.qr_code
     }
+

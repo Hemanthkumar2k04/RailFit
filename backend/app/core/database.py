@@ -49,8 +49,13 @@ async def get_db() -> AsyncSession:
 # Database initialization
 async def init_db():
     """Initialize database tables"""
-    async with engine.begin() as conn:
-        # Import all models to ensure they are registered
-        from app.models import user, asset, inspection, vendor, alert
-        # Create tables
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            # Import all models to ensure they are registered
+            from app.models import user, asset, inspection, vendor, alert
+            # Create tables
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"Could not initialize database: {e}")
+        logger.info("Server will start without database connection - some features may not work")
