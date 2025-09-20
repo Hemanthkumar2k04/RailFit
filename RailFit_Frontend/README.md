@@ -1,69 +1,131 @@
-# React + TypeScript + Vite
+# 🎨 RailFit Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern React + TypeScript frontend for the RailFit Railway Asset Management System.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
+- Node.js 18+ with npm
+- Modern web browser
+- Backend API running
 
-## Expanding the ESLint configuration
+### Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Install dependencies
+npm install
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Start development server
+npm run dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+# Build for production
+npm run build
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Preview production build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Development Server:** `http://localhost:5173`  
+**Backend API:** `http://localhost:8000`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📁 Project Structure
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+RailFit_Frontend/
+├── src/                       # Source code
+│   ├── components/           # Reusable components
+│   │   ├── ui/              # shadcn/ui components
+│   │   ├── logo.tsx         # RailFit logo
+│   │   ├── Navbar.tsx       # Navigation bar
+│   │   └── info-menu.tsx    # Menus and dropdowns
+│   ├── pages/               # Page components
+│   │   ├── Dashboard.tsx    # Main dashboard
+│   │   ├── Login.tsx        # Authentication
+│   │   ├── Assets/          # Asset management
+│   │   ├── Inspections/     # Inspection pages
+│   │   ├── Alerts/          # Alert management
+│   │   ├── Analytics/       # Analytics dashboard
+│   │   └── Settings/        # Settings pages
+│   ├── context/             # React contexts
+│   │   └── AuthContext.tsx  # Authentication state
+│   ├── assets/              # Static assets
+│   ├── App.tsx              # Main app component
+│   └── main.tsx             # React entry point
+├── components.json          # shadcn/ui configuration
+├── tailwind.config.js       # Tailwind CSS config
+├── vite.config.ts           # Vite configuration
+└── package.json             # Dependencies
+```
+
+## 🧩 Key Features
+
+### Asset Management
+- **Asset List View:** Grid/table with filtering and search
+- **Add Asset Modal:** Form with QR code generation
+- **Asset Details:** Comprehensive information display
+- **Health Indicators:** Visual health score and status
+
+### Inspection System
+- **Mobile-friendly Forms:** Touch-optimized data entry
+- **Photo Upload:** Image capture for inspections
+- **Condition Rating:** 1-5 scale assessment
+- **History Timeline:** Asset inspection history
+
+### Alert Management
+- **Priority Dashboard:** Color-coded alert system
+- **Real-time Notifications:** Instant alert updates
+- **Acknowledgment System:** Track alert resolution
+- **Smart Filtering:** Filter by priority and type
+
+### Analytics Dashboard
+- **Health Trends:** Visual charts and metrics
+- **RUL Predictions:** Remaining life forecasting
+- **Performance Stats:** Maintenance analytics
+- **Export Tools:** Data export capabilities
+
+## 🛠️ Development
+
+### Adding Components
+```bash
+# Create new component
+touch src/components/NewComponent.tsx
+
+# Add UI component from shadcn
+npx shadcn-ui@latest add [component-name]
+```
+
+### Technology Stack
+- **React 18** with TypeScript
+- **Vite** for fast development
+- **Tailwind CSS** for styling  
+- **shadcn/ui** for components
+- **React Router** for navigation
+- **Axios** for API calls
+
+### Build Commands
+```bash
+npm run dev          # Start development server
+npm run build        # Production build
+npm run preview      # Preview production build  
+npm run lint         # Code linting
+npm run type-check   # TypeScript checking
+```
+
+## 🚢 Deployment
+
+### Environment Variables
+```env
+VITE_API_BASE_URL=http://localhost:8000
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Deployment Platforms
+- **Vercel:** `vercel --prod`
+- **Netlify:** Build command: `npm run build`, Publish: `dist/`
+- **GitHub Pages:** Use `gh-pages` package
+
+---
+
+**For complete project documentation, see:** `../README.md`  
+**For backend API documentation, see:** `../backend/README.md`
