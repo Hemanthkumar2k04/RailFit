@@ -30,7 +30,7 @@ export default function InspectionHistory() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/fittings')
+  fetch('http://127.0.0.1:8000/api/inceptions') 
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
