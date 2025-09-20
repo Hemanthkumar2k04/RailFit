@@ -12,7 +12,7 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/alerts')
+   fetch('http://127.0.0.1:8000/api/alerts') 
       .then(res => res.json())
       .then(data => {
         setAlerts(Array.isArray(data) ? data : []);
