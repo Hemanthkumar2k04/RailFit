@@ -28,7 +28,7 @@ export default function Dashboard() {
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/dashboard')
+    fetch('http://127.0.0.1:8000/api/dashboard') 
       .then(res => res.json())
       .then(data => setDashboard(data));
   }, []);
