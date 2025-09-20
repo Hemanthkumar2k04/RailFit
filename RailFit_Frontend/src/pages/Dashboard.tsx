@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpIcon, AlertTriangleIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpIcon, AlertTriangleIcon, Plus, Package } from "lucide-react";
+import AddAssetModal from "@/components/AddAssetModal";
+import type { Asset } from "@/types/asset";
 
 type DashboardData = {
   totalAssets: number;
@@ -21,6 +24,8 @@ type DashboardData = {
 
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [showAddAssetModal, setShowAddAssetModal] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/dashboard')
@@ -173,6 +178,58 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="relative">
+          {/* Quick Action Items */}
+          <div className={`absolute bottom-16 right-0 transition-all duration-300 ease-in-out ${
+            isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}>
+            <div className="flex flex-col gap-3 min-w-max">
+              <Button
+                onClick={() => {
+                  setShowAddAssetModal(true);
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-700 shadow-lg border px-4 py-3 rounded-full transition-all duration-200 hover:scale-105"
+              >
+                <Package className="h-5 w-5" />
+                <span className="font-medium">Add Asset</span>
+              </Button> 
+            </div>
+          </div>
+
+          {/* Main FAB */}
+          <Button
+            onClick={() => setIsOpen(!isOpen)}
+            className={`w-14 h-14 rounded-full bg-black hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out ${
+              isOpen ? 'rotate-45' : 'rotate-0'
+            } hover:scale-110`}
+          >
+            <Plus className={`h-6 w-6 transition-transform duration-300 ${isOpen ? 'rotate-45' : 'rotate-0'}`} />
+          </Button>
+        </div>
+
+        {/* Backdrop */}
+        {isOpen && (
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[-1]"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </div>
+
+      {/* Add Asset Modal */}
+      <AddAssetModal
+        isOpen={showAddAssetModal}
+        onClose={() => setShowAddAssetModal(false)}
+        onAssetAdded={(asset: Asset) => {
+          console.log('New asset added:', asset);
+          // You can add logic here to refresh the dashboard data
+          // or show a success notification
+        }}
+      />
     </div>
   );
 }
