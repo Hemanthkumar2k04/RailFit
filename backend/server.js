@@ -40,9 +40,6 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 // Alerts route
-const fs = require('fs');
-const csv = require('csv-parser');
-
 app.get('/api/alerts', (req, res) => {
   const results = [];
   fs.createReadStream('fittings.csv')
