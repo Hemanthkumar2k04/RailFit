@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Package, QrCode, CheckCircle, AlertCircle } from 'lucide-react';
-import type { Asset, AssetCreate, CreateAssetResponse } from '@/types/asset';
+import type { Asset, AssetCreate } from '@/types/asset';
 import { ASSET_TYPES } from '@/types/asset';
 
 interface AddAssetModalProps {
@@ -31,11 +31,18 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
     setError('');
 
     try {
+      const token = localStorage.getItem('jwt_token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch('http://localhost:5000/api/assets', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(formData),
       });
 
@@ -43,12 +50,28 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
         throw new Error('Failed to create asset');
       }
 
-      const result: CreateAssetResponse = await response.json();
-      setCreatedAsset(result.asset);
-      setQrCode(result.qrCode);
+      const result = await response.json();
+      
+      // The API returns the asset directly, not wrapped in a CreateAssetResponse
+      const asset: Asset = {
+        assetId: result.asset_id,
+        type: result.type,
+        vendor: result.vendor_id || '',
+        installDate: result.install_date || '',
+        location: result.location,
+        warrantyPeriod: result.warranty_period || 0,
+        healthScore: result.health_score,
+        predictedRUL: result.predicted_rul,
+        status: result.status,
+        lastInspection: undefined,
+        inspectionHistory: []
+      };
+      
+      setCreatedAsset(asset);
+      setQrCode(result.qr_code || '');
       
       if (onAssetAdded) {
-        onAssetAdded(result.asset);
+        onAssetAdded(asset);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

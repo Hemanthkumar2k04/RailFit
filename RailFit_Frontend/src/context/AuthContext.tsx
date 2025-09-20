@@ -46,16 +46,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check if user is authenticated on app load
         const authStatus = localStorage.getItem('isAuthenticated')
         const userData = localStorage.getItem('user')
+        const jwtToken = localStorage.getItem('jwt_token')
 
-        if (authStatus === 'true' && userData) {
+        if (authStatus === 'true' && userData && jwtToken) {
             try {
                 const parsedUser = JSON.parse(userData)
+                // TODO: Validate JWT token with backend if needed
                 setUser(parsedUser)
                 setIsAuthenticated(true)
             } catch (error) {
                 console.error('Error parsing user data:', error)
                 localStorage.removeItem('isAuthenticated')
                 localStorage.removeItem('user')
+                localStorage.removeItem('jwt_token')
             }
         }
 
@@ -64,41 +67,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
-            // Mock authentication - replace with real API call
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            })
 
-            // Demo users for different roles
-            const demoUsers: Record<string, User> = {
-                'admin@railway.gov.in': {
-                    id: '1',
-                    email: 'admin@railway.gov.in',
-                    role: 'admin',
-                    name: 'System Administrator',
-                    department: 'IT Operations'
-                },
-                'manager@railway.gov.in': {
-                    id: '2',
-                    email: 'manager@railway.gov.in',
-                    role: 'manager',
-                    name: 'Railway Manager',
-                    department: 'Operations'
-                },
-                'inspector@railway.gov.in': {
-                    id: '3',
-                    email: 'inspector@railway.gov.in',
-                    role: 'field_inspector',
-                    name: 'Field Inspector',
-                    department: 'Maintenance'
-                }
+            if (!response.ok) {
+                console.error('Login failed:', response.statusText)
+                return false
             }
 
-            const authenticatedUser = demoUsers[email]
+            const data = await response.json()
+            
+            if (data.access_token && data.user) {
+                const authenticatedUser: User = {
+                    id: data.user.id,
+                    email: data.user.email,
+                    role: data.user.role,
+                    name: data.user.name || data.user.email,
+                    department: data.user.department
+                }
 
-            if (authenticatedUser && password.length >= 6) {
                 setUser(authenticatedUser)
                 setIsAuthenticated(true)
                 localStorage.setItem('isAuthenticated', 'true')
                 localStorage.setItem('user', JSON.stringify(authenticatedUser))
+                localStorage.setItem('jwt_token', data.access_token)
                 return true
             }
 
@@ -139,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(false)
         localStorage.removeItem('isAuthenticated')
         localStorage.removeItem('user')
+        localStorage.removeItem('jwt_token')
     }
 
     const handleLogout = logout // Alias for compatibility

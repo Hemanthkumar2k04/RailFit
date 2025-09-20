@@ -46,16 +46,12 @@ export interface CreateAssetResponse {
 // Asset status types
 export type AssetStatus = 'active' | 'needs_maintenance' | 'critical' | 'retired';
 
-// Asset types
+// Asset types (must match database enum)
 export const ASSET_TYPES = [
   'Elastic Rail Clip',
   'Rail Pad',
-  'Fishplate',
-  'Rail Bolt',
-  'Anchor',
-  'Switch Component',
-  'Signal Equipment',
-  'Track Circuit'
+  'Liner',
+  'Sleeper'
 ] as const;
 
 export type AssetType = typeof ASSET_TYPES[number];

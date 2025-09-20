@@ -12,12 +12,8 @@ class AssetStatus(str, Enum):
 class AssetType(str, Enum):
     ELASTIC_RAIL_CLIP = "Elastic Rail Clip"
     RAIL_PAD = "Rail Pad"
-    FISHPLATE = "Fishplate"
-    RAIL_BOLT = "Rail Bolt"
-    ANCHOR = "Anchor"
-    SWITCH_COMPONENT = "Switch Component"
-    SIGNAL_EQUIPMENT = "Signal Equipment"
-    TRACK_CIRCUIT = "Track Circuit"
+    LINER = "Liner"
+    SLEEPER = "Sleeper"
 
 class AssetBase(BaseModel):
     type: AssetType

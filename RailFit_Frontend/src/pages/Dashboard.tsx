@@ -28,9 +28,21 @@ export default function Dashboard() {
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/dashboard') 
+    const token = localStorage.getItem('jwt_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch('http://localhost:5000/api/dashboard', {
+      headers
+    })
       .then(res => res.json())
-      .then(data => setDashboard(data));
+      .then(data => setDashboard(data))
+      .catch(error => console.error('Dashboard fetch error:', error));
   }, []);
 
   if (!dashboard || !dashboard.assetDistribution) return <div>Loading...</div>;
