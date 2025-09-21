@@ -319,7 +319,7 @@ async def get_assets_metrics(credentials: HTTPAuthorizationCredentials = Depends
             response = await client.get(
                 f"{SUPABASE_URL}/rest/v1/assets",
                 headers=headers,
-                params={"select": "status,condition"}
+                params={"select": "status,condition,health_score"}
             )
 
             if response.status_code != 200:
@@ -339,12 +339,12 @@ async def get_assets_metrics(credentials: HTTPAuthorizationCredentials = Depends
             # Calculate installed assets (not retired)
             installed_assets = len([a for a in assets if a.get('status') != 'retired'])
             
-            # Calculate asset distribution by condition (including excellent)
+            # Calculate asset distribution by health score thresholds
             asset_distribution = {
-                "excellent": len([a for a in assets if a.get('condition') == 'excellent']),
-                "good": len([a for a in assets if a.get('condition') == 'good']),
-                "ok": len([a for a in assets if a.get('condition') == 'ok']),
-                "critical": len([a for a in assets if a.get('condition') == 'critical'])
+                "excellent": len([a for a in assets if a.get('health_score', 0) >= 90]),
+                "good": len([a for a in assets if 75 <= a.get('health_score', 0) < 90]),
+                "ok": len([a for a in assets if 50 <= a.get('health_score', 0) < 75]),
+                "critical": len([a for a in assets if a.get('health_score', 0) < 50])
             }
             
             # Calculate status distribution  
@@ -694,6 +694,7 @@ async def bulk_import_assets(
                     # Normalize condition values
                     raw_condition = (row.get('condition') or 'good').strip()
                     condition_map = {
+                        'excellent': 'excellent',
                         'good': 'good',
                         'ok': 'ok',
                         'okay': 'ok',

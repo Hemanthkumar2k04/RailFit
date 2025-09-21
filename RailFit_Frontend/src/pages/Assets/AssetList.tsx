@@ -59,6 +59,7 @@ const assetTypeOptions = [
 
     const conditionOptions = [
         { value: '', label: 'All Conditions' },
+        { value: 'excellent', label: 'Excellent' },
         { value: 'good', label: 'Good' },
         { value: 'ok', label: 'OK' },
         { value: 'critical', label: 'Critical' }
@@ -434,7 +435,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
     const getHealthStatus = (healthScore?: number): string => {
         if (!healthScore) return 'Unknown'
         if (healthScore >= 90) return 'Excellent'
-        if (healthScore >= 70) return 'Good'
+        if (healthScore >= 75) return 'Good'
         if (healthScore >= 50) return 'Fair'
         return 'Critical'
     }
@@ -442,7 +443,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
     const getHealthColor = (score?: number) => {
         if (!score) return 'text-gray-500 bg-gray-100'
         if (score >= 90) return 'text-emerald-600 bg-emerald-100'
-        if (score >= 70) return 'text-slate-600 bg-slate-100'
+        if (score >= 75) return 'text-slate-600 bg-slate-100'
         if (score >= 50) return 'text-amber-600 bg-amber-100'
         return 'text-rose-600 bg-rose-100'
     }
@@ -703,22 +704,23 @@ export default function AssetList() {
     const [showAssetDetail, setShowAssetDetail] = useState(false)
     const [showBulkImportModal, setShowBulkImportModal] = useState(false)
     const [metrics, setMetrics] = useState<{
-        total_assets: number;
-        operational_assets: number;
-        maintenance_queue: number;
-        critical_alerts: number;
-        asset_distribution: {
+        totalAssets: number;
+        installedAssets: number;
+        maintenanceQueue: number;
+        criticalAssets: number;
+        assetDistribution: {
+            excellent: number;
             good: number;
             ok: number;
             critical: number;
         };
-        status_distribution: {
+        statusDistribution: {
             active: number;
             under_maintenance: number;
             retired: number;
             not_installed: number;
         };
-        last_updated: string;
+        lastUpdated: string;
     } | null>(null)
 
     // Check for URL parameter to auto-open add asset modal
@@ -886,7 +888,7 @@ export default function AssetList() {
     const getHealthStatus = (healthScore?: number): string => {
         if (!healthScore) return 'Unknown'
         if (healthScore >= 90) return 'Excellent'
-        if (healthScore >= 70) return 'Good'
+        if (healthScore >= 75) return 'Good'
         if (healthScore >= 50) return 'Fair'
         return 'Critical'
     }
@@ -894,7 +896,7 @@ export default function AssetList() {
     const getHealthColor = (score?: number) => {
         if (!score) return 'text-gray-500 bg-gray-100 border-gray-200'
         if (score >= 90) return 'text-emerald-600 bg-emerald-100 border-emerald-200'
-        if (score >= 70) return 'text-slate-600 bg-slate-100 border-slate-200'
+        if (score >= 75) return 'text-slate-600 bg-slate-100 border-slate-200'
         if (score >= 50) return 'text-amber-600 bg-amber-100 border-amber-200'
         return 'text-rose-600 bg-rose-100 border-rose-200'
     }
@@ -1018,10 +1020,10 @@ export default function AssetList() {
 
     // Calculate asset distribution categories
     const assetDistribution = {
-        excellent: (metrics?.asset_distribution.good ?? 0) + (metrics?.asset_distribution.ok ?? 0), // Combine good and ok for excellent
-        good: metrics?.asset_distribution.good ?? 0,
-        fair: metrics?.asset_distribution.ok ?? 0,
-        critical: metrics?.asset_distribution.critical ?? 0
+        excellent: metrics?.assetDistribution?.excellent ?? 0,
+        good: metrics?.assetDistribution?.good ?? 0,
+        ok: metrics?.assetDistribution?.ok ?? 0,
+        critical: metrics?.assetDistribution?.critical ?? 0
       };
 
       console.log('Asset Distribution:', assetDistribution); // Temporary usage to avoid unused variable error
@@ -1068,7 +1070,7 @@ export default function AssetList() {
                         <div className="text-2xl">📦</div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-primary">{((metrics?.total_assets ?? pagination.total) || 0).toLocaleString()}</div>
+                        <div className="text-3xl font-bold text-primary">{((metrics?.totalAssets ?? pagination.total) || 0).toLocaleString()}</div>
                         <p className="text-xs text-emerald-600 mt-1">Real-time count</p>
                     </CardContent>
                 </Card>
@@ -1080,7 +1082,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-emerald-600">
-                            {metrics?.operational_assets ?? safeAssets.filter(a => a.status === 'active').length}
+                            {metrics?.installedAssets ?? safeAssets.filter(a => a.status === 'active').length}
                         </div>
                         <p className="text-xs text-emerald-600 mt-1">Operational status</p>
                     </CardContent>
@@ -1093,7 +1095,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-amber-600">
-                            {metrics?.maintenance_queue ?? safeAssets.filter(a => a.status === 'under_maintenance').length}
+                            {metrics?.maintenanceQueue ?? safeAssets.filter(a => a.status === 'under_maintenance').length}
                         </div>
                         <p className="text-xs text-amber-600 mt-1">Pending maintenance</p>
                     </CardContent>
@@ -1106,7 +1108,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-rose-600">
-                            {metrics?.critical_alerts ?? safeAssets.filter(a => a.condition === 'critical').length}
+                            {metrics?.criticalAssets ?? safeAssets.filter(a => a.condition === 'critical').length}
                         </div>
                         <p className="text-xs text-rose-600 mt-1">Immediate attention</p>
                     </CardContent>
