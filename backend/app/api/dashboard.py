@@ -43,25 +43,29 @@ async def get_dashboard() -> Dict[str, Any]:
             maintenance_queue = len([a for a in assets if a.get('status') == 'needs_maintenance'])
             critical_alerts = len([a for a in assets if a.get('health_score', 0) < 30])
             
-            # Asset health distribution based on health scores
-            excellent = len([a for a in assets if a.get('health_score', 0) >= 90])
-            good = len([a for a in assets if 70 <= a.get('health_score', 0) < 90])
-            fair = len([a for a in assets if 50 <= a.get('health_score', 0) < 70])
+            # Updated asset health distribution with 'excellent' enum
+            excellent = len([a for a in assets if a.get('health_score', 0) >= 85])
+            good = len([a for a in assets if 70 <= a.get('health_score', 0) < 85])
+            ok = len([a for a in assets if 50 <= a.get('health_score', 0) < 70])
             critical = len([a for a in assets if a.get('health_score', 0) < 50])
-            
+
+            # Updated metrics for installed assets and maintenance queue
+            installed_assets = len([a for a in assets if a.get('status') != 'retired'])
+            maintenance_queue = len([a for a in assets if a.get('status') == 'under_maintenance'])
+
             return {
                 "totalAssets": total_assets,
-                "operationalAssets": operational_assets,
+                "installedAssets": installed_assets,
                 "maintenanceQueue": maintenance_queue,
-                "criticalAlerts": critical_alerts,
+                "criticalAssets": critical,
                 "assetDistribution": {
                     "excellent": excellent,
                     "good": good,
-                    "fair": fair,
+                    "ok": ok,
                     "critical": critical
                 },
-                "systemUptime": 99.2 + (total_assets * 0.001),  # Dynamic based on asset count
-                "avgResponseTime": max(150, 300 - total_assets),  # Better response with more assets
+                "systemUptime": 99.2 + (total_assets * 0.001),
+                "avgResponseTime": max(150, 300 - total_assets),
                 "zones": [
                     {"name": "Central Railway", "status": "Online"},
                     {"name": "Western Railway", "status": "Online"},

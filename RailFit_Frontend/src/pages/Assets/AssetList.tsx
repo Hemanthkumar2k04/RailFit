@@ -30,17 +30,46 @@ import {
     Save,
     Building,
     Settings,
-    User,
-    Tag
+    User
 } from 'lucide-react'
 
-// Types for API response
+// Define options outside component to avoid re-declaration
+const assetTypes = [
+    'Elastic Rail Clip',
+    'Rail Pad',
+    'Liner',
+    'Sleeper'
+]
+
+const assetTypeOptions = [
+    { value: '', label: 'All Types' },
+    { value: 'Elastic Rail Clip', label: 'Elastic Rail Clip' },
+    { value: 'Rail Pad', label: 'Rail Pad' },
+    { value: 'Liner', label: 'Liner' },
+    { value: 'Sleeper', label: 'Sleeper' }
+]
+
+    const statusOptions = [
+        { value: '', label: 'All Status' },
+        { value: 'active', label: 'Active' },
+        { value: 'under_maintenance', label: 'Under Maintenance' },
+        { value: 'retired', label: 'Retired' },
+        { value: 'not_installed', label: 'Not Installed' }
+    ]
+
+    const conditionOptions = [
+        { value: '', label: 'All Conditions' },
+        { value: 'good', label: 'Good' },
+        { value: 'ok', label: 'OK' },
+        { value: 'critical', label: 'Critical' }
+    ]// Types for API response
 interface Asset {
     asset_id: string
     type: string
     location: string
     health_score?: number
     status: string
+    condition: string
     install_date?: string
     vendor_id?: string
     created_at: string
@@ -108,27 +137,6 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-
-    const assetTypes = [
-        'Track Signal',
-        'Railway Switch',
-        'Bridge Component',
-        'Locomotive Engine',
-        'Passenger Car',
-        'Freight Car',
-        'Power Distribution',
-        'Communication System',
-        'Safety Equipment',
-        'Platform Infrastructure'
-    ]
-
-    const statusOptions = [
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
-        { value: 'needs_maintenance', label: 'Needs Maintenance' },
-        { value: 'under_repair', label: 'Under Repair' },
-        { value: 'decommissioned', label: 'Decommissioned' }
-    ]
 
     const maintenanceSchedules = [
         { value: 'weekly', label: 'Weekly' },
@@ -685,14 +693,33 @@ export default function AssetList() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [filters, setFilters] = useState({
-        assetType: '',
+        type: '',
         location: '',
-        status: ''
+        status: '',
+        condition: ''
     })
     const [showAddAssetModal, setShowAddAssetModal] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
     const [showAssetDetail, setShowAssetDetail] = useState(false)
     const [showBulkImportModal, setShowBulkImportModal] = useState(false)
+    const [metrics, setMetrics] = useState<{
+        total_assets: number;
+        operational_assets: number;
+        maintenance_queue: number;
+        critical_alerts: number;
+        asset_distribution: {
+            good: number;
+            ok: number;
+            critical: number;
+        };
+        status_distribution: {
+            active: number;
+            under_maintenance: number;
+            retired: number;
+            not_installed: number;
+        };
+        last_updated: string;
+    } | null>(null)
 
     // Check for URL parameter to auto-open add asset modal
     useEffect(() => {
@@ -705,16 +732,33 @@ export default function AssetList() {
         }
     }, [searchParams, setSearchParams])
 
-    // Utility function to check authentication and handle redirects
-    const checkAuthentication = () => {
-        const token = localStorage.getItem('jwt_token')
-        if (!token) {
-            // In a real app, you might want to redirect to login page
-            console.warn('No authentication token found')
-            return false
+    const fetchMetrics = async () => {
+        try {
+            const token = localStorage.getItem('jwt_token')
+            if (!token) {
+                console.warn('No authentication token found')
+                return
+            }
+
+            const response = await fetch('http://localhost:5000/api/assets/metrics', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch metrics: ${response.status}`)
+            }
+
+            const metricsData = await response.json()
+            setMetrics(metricsData)
+        } catch (error) {
+            console.error('Error fetching metrics:', error)
         }
-        return true
     }
+
+
 
     const fetchAssets = async (page: number = 1, searchQuery: string = '', assetFilters: any = {}) => {
         setLoading(true)
@@ -732,9 +776,10 @@ export default function AssetList() {
             })
 
             if (searchQuery) params.append('search', searchQuery)
-            if (assetFilters.assetType) params.append('asset_type', assetFilters.assetType)
+            if (assetFilters.type) params.append('asset_type', assetFilters.type)
             if (assetFilters.location) params.append('location', assetFilters.location)
             if (assetFilters.status) params.append('status', assetFilters.status)
+            if (assetFilters.condition) params.append('condition', assetFilters.condition)
 
             const response = await fetch(`http://localhost:5000/api/assets/?${params}`, {
                 headers: {
@@ -770,7 +815,15 @@ export default function AssetList() {
 
     useEffect(() => {
         fetchAssets()
+        fetchMetrics()
     }, [])
+
+    // Refetch assets when filters change
+    useEffect(() => {
+        fetchAssets(1, searchTerm, filters)
+    }, [filters])
+
+
 
     // Ensure assets is always an array to prevent filter errors
     const safeAssets = assets || []
@@ -867,6 +920,83 @@ export default function AssetList() {
         return new Date(dateString).toLocaleDateString()
     }
 
+    const handleBulkQRDownload = async () => {
+        if (selectedAssets.length === 0) {
+            alert('Please select assets to download QR codes.')
+            return
+        }
+
+        try {
+            // Show loading state (you could add a loading state here)
+            const JSZip = (await import('jszip')).default
+            const QRCode = (await import('qrcode')).default
+            const zip = new JSZip()
+            
+            // Process each selected asset
+            for (const assetId of selectedAssets) {
+                const asset = filteredAssets.find(a => a.asset_id === assetId)
+                if (asset) {
+                    try {
+                        // Generate QR code for this asset with asset details JSON
+                        const assetData = {
+                            id: asset.asset_id,
+                            type: asset.type,
+                            location: asset.location,
+                            status: asset.status,
+                            health_score: asset.health_score || 'N/A'
+                        }
+                        
+                        // Create QR code with asset data
+                        const qrDataUrl = await QRCode.toDataURL(JSON.stringify(assetData), {
+                            width: 300,
+                            margin: 2,
+                            color: {
+                                dark: '#000000',
+                                light: '#FFFFFF'
+                            }
+                        })
+                        
+                        // Convert data URL to blob
+                        const response = await fetch(qrDataUrl)
+                        const blob = await response.blob()
+                        
+                        // Add to ZIP with descriptive filename
+                        const fileName = `QR_${asset.asset_id.slice(0, 8)}_${asset.type.replace(/\s+/g, '_')}.png`
+                        zip.file(fileName, blob)
+                        
+                    } catch (assetError) {
+                        console.error(`Error generating QR for asset ${asset.asset_id}:`, assetError)
+                        // Continue with other assets
+                    }
+                }
+            }
+            
+            // Generate and download ZIP
+            const zipBlob = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            })
+            
+            // Create download link
+            const url = URL.createObjectURL(zipBlob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `QR_Codes_${selectedAssets.length}_assets_${new Date().toISOString().split('T')[0]}.zip`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+            
+            // Clear selection after download
+            setSelectedAssets([])
+            
+        } catch (error) {
+            console.error('Error generating bulk QR codes:', error)
+            alert('Failed to generate QR codes. Please try again.')
+        }
+    }
+
     if (error) {
         return (
             <div className="p-6 space-y-6">
@@ -885,6 +1015,16 @@ export default function AssetList() {
             </div>
         )
     }
+
+    // Calculate asset distribution categories
+    const assetDistribution = {
+        excellent: (metrics?.asset_distribution.good ?? 0) + (metrics?.asset_distribution.ok ?? 0), // Combine good and ok for excellent
+        good: metrics?.asset_distribution.good ?? 0,
+        fair: metrics?.asset_distribution.ok ?? 0,
+        critical: metrics?.asset_distribution.critical ?? 0
+      };
+
+      console.log('Asset Distribution:', assetDistribution); // Temporary usage to avoid unused variable error
 
     return (
         <div className="p-6 space-y-6">
@@ -928,7 +1068,7 @@ export default function AssetList() {
                         <div className="text-2xl">📦</div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-primary">{(pagination.total || 0).toLocaleString()}</div>
+                        <div className="text-3xl font-bold text-primary">{((metrics?.total_assets ?? pagination.total) || 0).toLocaleString()}</div>
                         <p className="text-xs text-emerald-600 mt-1">Real-time count</p>
                     </CardContent>
                 </Card>
@@ -940,7 +1080,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-emerald-600">
-                            {safeAssets.filter(a => a.status === 'active').length}
+                            {metrics?.operational_assets ?? safeAssets.filter(a => a.status === 'active').length}
                         </div>
                         <p className="text-xs text-emerald-600 mt-1">Operational status</p>
                     </CardContent>
@@ -953,7 +1093,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-amber-600">
-                            {safeAssets.filter(a => a.status === 'needs_maintenance').length}
+                            {metrics?.maintenance_queue ?? safeAssets.filter(a => a.status === 'under_maintenance').length}
                         </div>
                         <p className="text-xs text-amber-600 mt-1">Pending maintenance</p>
                     </CardContent>
@@ -966,7 +1106,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-rose-600">
-                            {safeAssets.filter(a => (a.health_score || 0) < 50).length}
+                            {metrics?.critical_alerts ?? safeAssets.filter(a => a.condition === 'critical').length}
                         </div>
                         <p className="text-xs text-rose-600 mt-1">Immediate attention</p>
                     </CardContent>
@@ -976,37 +1116,98 @@ export default function AssetList() {
             {/* Search and Filter Section */}
             <Card>
                 <CardHeader>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-center space-x-4 flex-1">
-                            <div className="relative flex-1 max-w-sm">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                                <Input
-                                    placeholder="Search assets..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="pl-10"
-                                />
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-center space-x-4 flex-1">
+                                <div className="relative flex-1 max-w-sm">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Input
+                                        placeholder="Search assets..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                        className="pl-10"
+                                    />
+                                </div>
+                                <Button onClick={handleSearch} variant="outline">
+                                    Search
+                                </Button>
                             </div>
-                            <Button onClick={handleSearch} variant="outline">
-                                Search
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant={viewMode === 'table' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setViewMode('table')}
+                                >
+                                    <List className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setViewMode('grid')}
+                                >
+                                    <Grid3X3 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <Button
-                                variant={viewMode === 'table' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setViewMode('table')}
-                            >
-                                <List className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setViewMode('grid')}
-                            >
-                                <Grid3X3 className="h-4 w-4" />
-                            </Button>
+                        
+                        {/* Filter Controls */}
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex flex-col md:flex-row gap-2 flex-1">
+                                <select
+                                    value={filters.type || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    {assetTypeOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                <select
+                                    value={filters.status || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    {statusOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                <select
+                                    value={filters.condition || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, condition: e.target.value }))}
+                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    {conditionOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            {/* Bulk Actions */}
+                            {selectedAssets.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">
+                                        {selectedAssets.length} selected
+                                    </span>
+                                    <Button
+                                        onClick={() => handleBulkQRDownload()}
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download QR Codes
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
@@ -1199,8 +1400,9 @@ export default function AssetList() {
                 isOpen={showBulkImportModal}
                 onClose={() => setShowBulkImportModal(false)}
                 onSuccess={() => {
-                    // Refresh assets list after successful import
+                    // Refresh assets list and summary after successful import
                     fetchAssets()
+                    fetchMetrics()
                 }}
             />
 

@@ -13,21 +13,28 @@ interface ImportResult {
   total_processed: number;
   successful_imports: number;
   failed_imports: number;
+  created_assets: number;
+  updated_assets: number;
+  skipped_duplicates: number;
+  duplicate_strategy_used: string;
   successful_assets: Array<{
     asset_id: string;
     type: string;
     location: string;
     row: number;
+    operation?: string;
   }>;
   errors: Array<{
     row: number;
     error: string;
     data: any;
+    duplicate_of?: string;
   }>;
 }
 
 const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<string>('skip');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +105,10 @@ Sleeper,Platform 2,VENDOR001,2023-03-05,30,88,active,Concrete railway sleeper,SL
       formData.append('file', selectedFile);
 
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch('http://localhost:5000/api/assets/bulk-import', {
+      const url = new URL('http://localhost:5000/api/assets/bulk-import');
+      url.searchParams.append('duplicate_strategy', duplicateStrategy);
+      
+      const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -164,6 +174,55 @@ Sleeper,Platform 2,VENDOR001,2023-03-05,30,88,active,Concrete railway sleeper,SL
               <li>• File size limit: 10MB</li>
               <li>• Only Manager or Admin users can perform bulk imports</li>
             </ul>
+          </div>
+
+          {/* Duplicate Handling Strategy */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="font-medium text-amber-900 mb-3">Duplicate Handling</h3>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="duplicateStrategy"
+                  value="skip"
+                  checked={duplicateStrategy === 'skip'}
+                  onChange={(e) => setDuplicateStrategy(e.target.value)}
+                  className="text-blue-600"
+                />
+                <div>
+                  <span className="font-medium text-amber-900">Skip Duplicates</span>
+                  <p className="text-sm text-amber-700">Skip assets that already exist (recommended)</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="duplicateStrategy"
+                  value="update"
+                  checked={duplicateStrategy === 'update'}
+                  onChange={(e) => setDuplicateStrategy(e.target.value)}
+                  className="text-blue-600"
+                />
+                <div>
+                  <span className="font-medium text-amber-900">Update Existing</span>
+                  <p className="text-sm text-amber-700">Update existing assets with new data</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="duplicateStrategy"
+                  value="create_anyway"
+                  checked={duplicateStrategy === 'create_anyway'}
+                  onChange={(e) => setDuplicateStrategy(e.target.value)}
+                  className="text-blue-600"
+                />
+                <div>
+                  <span className="font-medium text-amber-900">Create Anyway</span>
+                  <p className="text-sm text-amber-700">Create new assets even if duplicates exist</p>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Template Download */}
@@ -258,25 +317,36 @@ Sleeper,Platform 2,VENDOR001,2023-03-05,30,88,active,Concrete railway sleeper,SL
           {uploadResult && (
             <div className="space-y-4">
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {uploadResult.total_processed}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card className="p-3 text-center">
+                  <div className="text-xl font-bold text-green-600">
+                    {uploadResult.created_assets || 0}
                   </div>
-                  <div className="text-sm text-gray-600">Total Processed</div>
+                  <div className="text-xs text-gray-600">Created</div>
                 </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {uploadResult.successful_imports}
+                <Card className="p-3 text-center">
+                  <div className="text-xl font-bold text-blue-600">
+                    {uploadResult.updated_assets || 0}
                   </div>
-                  <div className="text-sm text-gray-600">Successful</div>
+                  <div className="text-xs text-gray-600">Updated</div>
                 </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">
+                <Card className="p-3 text-center">
+                  <div className="text-xl font-bold text-amber-600">
+                    {uploadResult.skipped_duplicates || 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Skipped</div>
+                </Card>
+                <Card className="p-3 text-center">
+                  <div className="text-xl font-bold text-red-600">
                     {uploadResult.failed_imports}
                   </div>
-                  <div className="text-sm text-gray-600">Failed</div>
+                  <div className="text-xs text-gray-600">Failed</div>
                 </Card>
+              </div>
+              
+              {/* Strategy Used */}
+              <div className="text-center text-sm text-gray-600">
+                Strategy used: <span className="font-medium capitalize">{uploadResult.duplicate_strategy_used?.replace('_', ' ')}</span>
               </div>
 
               {/* Successful Imports */}

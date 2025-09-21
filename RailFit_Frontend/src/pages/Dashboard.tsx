@@ -18,56 +18,34 @@ const formatPercentage = (value: number, total: number, decimals = 1): string =>
   return ((value / total) * 100).toFixed(decimals);
 };
 
-type DashboardData = {
+// Extend the DashboardData type to include missing properties
+interface DashboardData {
   totalAssets: number;
-  operationalAssets: number;
+  installedAssets: number;
   maintenanceQueue: number;
-  criticalAlerts: number;
+  criticalAssets: number;
   assetDistribution: {
     excellent: number;
     good: number;
-    fair: number;
+    ok: number;
     critical: number;
   };
   systemUptime: number;
   avgResponseTime: number;
   zones: { name: string; status: string }[];
-};
-
-// Asset interface for API response
-interface Asset {
-  asset_id: string;
-  type: string;
-  location: string;
-  health_score?: number;
-  status: string;
-  install_date?: string;
-  vendor_id?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface AssetListResponse {
-  assets: Asset[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
 }
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState<DashboardData>({
     totalAssets: 0,
-    operationalAssets: 0,
+    installedAssets: 0,
     maintenanceQueue: 0,
-    criticalAlerts: 0,
+    criticalAssets: 0,
     assetDistribution: {
       excellent: 0,
       good: 0,
-      fair: 0,
+      ok: 0,
       critical: 0
     },
     systemUptime: 99.201,
@@ -85,48 +63,6 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const calculateMetricsFromAssets = (assets: Asset[]): Partial<DashboardData> => {
-    console.log('Dashboard: Calculating metrics for', assets.length, 'assets');
-    console.log('Dashboard: Assets received for calculation:', assets);
-    
-    const totalAssets = assets.length;
-    
-    // Count operational assets (active status)
-    const operationalAssets = assets.filter(asset => 
-      asset.status === 'active'
-    ).length;
-    
-    // Count assets needing maintenance
-    const maintenanceQueue = assets.filter(asset => 
-      asset.status === 'needs_maintenance' || asset.status === 'under_repair'
-    ).length;
-    
-    // Count critical alerts (assets with health score < 30 or critical status)
-    const criticalAlerts = assets.filter(asset => 
-      (asset.health_score && asset.health_score < 30) || 
-      asset.status === 'decommissioned'
-    ).length;
-    
-    // Calculate asset distribution based on health scores
-    const assetDistribution = {
-      excellent: assets.filter(asset => asset.health_score && asset.health_score >= 85).length,
-      good: assets.filter(asset => asset.health_score && asset.health_score >= 70 && asset.health_score < 85).length,
-      fair: assets.filter(asset => asset.health_score && asset.health_score >= 50 && asset.health_score < 70).length,
-      critical: assets.filter(asset => !asset.health_score || asset.health_score < 50).length
-    };
-    
-    const result = {
-      totalAssets,
-      operationalAssets,
-      maintenanceQueue,
-      criticalAlerts,
-      assetDistribution
-    };
-    
-    console.log('Dashboard: Calculated metrics result:', result);
-    return result;
-  };
-
   const fetchDashboardData = async () => {
     setIsRefreshing(true);
     
@@ -140,38 +76,52 @@ export default function Dashboard() {
         return;
       }
 
-      console.log('Dashboard: Fetching assets from API...');
-      // Fetch all assets with maximum allowed limit to get complete data for metrics
-      const response = await fetch('http://localhost:5000/api/assets?limit=100', {
+      console.log('Dashboard: Fetching metrics from API...');
+      // Fetch metrics from the centralized endpoint
+      const response = await fetch('http://localhost:5000/api/assets/metrics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
 
-      console.log('Dashboard: API response status:', response.status);
+      console.log('Dashboard: Metrics API response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Dashboard: API error response:', errorText);
-        throw new Error(`Failed to fetch assets: ${response.status} ${response.statusText}`);
+        console.error('Dashboard: Metrics API error response:', errorText);
+        throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`);
       }
 
-      const data: AssetListResponse = await response.json();
-      console.log('Dashboard: Assets received:', data.total, 'assets');
-      console.log('Dashboard: Assets data:', data);
+      const metrics = await response.json();
+
+      console.log('Dashboard: Metrics fetched from API:', metrics);
+
+      const assetDistribution = {
+        excellent: metrics.assetDistribution?.excellent || 0,
+        good: metrics.assetDistribution?.good || 0,
+        ok: metrics.assetDistribution?.ok || 0,
+        critical: metrics.assetDistribution?.critical || 0
+      };
+
+      const dashboardMetrics = {
+        totalAssets: metrics.totalAssets || 0,
+        installedAssets: metrics.installedAssets || 0,
+        maintenanceQueue: metrics.maintenanceQueue || 0,
+        criticalAssets: metrics.criticalAssets || 0,
+        assetDistribution,
+        systemUptime: metrics.systemUptime || 99.0,
+        avgResponseTime: metrics.avgResponseTime || 1.5,
+        zones: metrics.zones || []
+      };
       
-      const calculatedMetrics = calculateMetricsFromAssets(data.assets);
-      console.log('Dashboard: Calculated metrics:', calculatedMetrics);
-      
-      setDashboard(prev => ({
-        ...prev,
-        ...calculatedMetrics
-      }));
+      console.log('Dashboard: Metrics to be set in state:', dashboardMetrics);
+
+      setDashboard(dashboardMetrics);
       
       setLastUpdated(new Date());
     } catch (error) {
-      console.error('Dashboard: Error fetching dashboard data:', error);
+      console.error('Dashboard: Error fetching dashboard metrics:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -191,7 +141,7 @@ export default function Dashboard() {
     await fetchDashboardData();
   };
 
-  const operationalPercentage = parseFloat(formatPercentage(dashboard.operationalAssets, dashboard.totalAssets));
+  const operationalPercentage = parseFloat(formatPercentage(dashboard.installedAssets, dashboard.totalAssets));
   const maintenancePercentage = parseFloat(formatPercentage(dashboard.maintenanceQueue, dashboard.totalAssets));
 
   return (
@@ -222,7 +172,7 @@ export default function Dashboard() {
 
         {/* Main Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-          <Card className="h-fit">
+          <Card className="h-fit border-l-4 border-blue-400">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -242,8 +192,8 @@ export default function Dashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600">Operational Assets</p>
-                  <p className="text-2xl font-bold text-emerald-600">{dashboard.operationalAssets.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600">Installed Assets</p>
+                  <p className="text-2xl font-bold text-emerald-600">{dashboard.installedAssets.toLocaleString()}</p>
                   <div className="mt-2 space-y-1">
                     <Progress value={operationalPercentage} className="h-2" />
                     <Badge variant="secondary" className="text-xs">
@@ -278,8 +228,8 @@ export default function Dashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600">Critical Alerts</p>
-                  <p className="text-2xl font-bold text-rose-600">{dashboard.criticalAlerts}</p>
+                  <p className="text-sm text-gray-600">Critical Assets</p>
+                  <p className="text-2xl font-bold text-rose-600">{dashboard.criticalAssets}</p>
                   <div className="mt-2">
                     <Badge variant="destructive" className="text-xs">
                       Immediate Action Required
@@ -315,7 +265,7 @@ export default function Dashboard() {
                   />
                   <div 
                     className="h-full bg-amber-400 transition-all duration-1000"
-                    style={{ width: `${(dashboard.assetDistribution.fair / dashboard.totalAssets) * 100}%` }}
+                    style={{ width: `${(dashboard.assetDistribution.ok / dashboard.totalAssets) * 100}%` }}
                   />
                   <div 
                     className="h-full bg-rose-400 transition-all duration-1000"
@@ -328,7 +278,7 @@ export default function Dashboard() {
                   {[
                     { label: 'Excellent', value: dashboard.assetDistribution.excellent, color: 'bg-emerald-400' },
                     { label: 'Good', value: dashboard.assetDistribution.good, color: 'bg-slate-400' },
-                    { label: 'Fair', value: dashboard.assetDistribution.fair, color: 'bg-amber-400' },
+                    { label: 'Ok', value: dashboard.assetDistribution.ok, color: 'bg-amber-400' },
                     { label: 'Critical', value: dashboard.assetDistribution.critical, color: 'bg-rose-400' }
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between py-2 border-b border-gray-400">
@@ -375,7 +325,7 @@ export default function Dashboard() {
                 
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Zone Status</h4>
-                  {dashboard.zones.map((zone, i) => (
+                  {dashboard.zones.map((zone: { name: string; status: string }, i: number) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
                       <span className="font-medium text-sm">{zone.name}</span>
                       <div className="flex items-center gap-2">

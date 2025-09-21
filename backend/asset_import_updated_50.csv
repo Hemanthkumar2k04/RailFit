@@ -1,0 +1,53 @@
+type,location,vendor_id,install_date,warranty_period,health_score,status,condition,description,serial_number,model,manufacturer
+Elastic Rail Clip,Platform 1 Section A,RailTech Industries,2023-01-15,36,85,active,good,High-strength elastic rail clip for platform section,ERC-001,Model-X,ClipCorp
+Rail Pad,Junction Point B-12,TrackMaster Corp,2023-02-20,24,92,active,good,Vibration dampening rail pad with enhanced durability,RP-001,Heavy-Duty,PadTech
+Liner,Bridge Crossing C-45,ClipCorp Solutions,2022-12-10,60,78,under_maintenance,ok,Track liner component requiring scheduled maintenance,LNR-001,Pro-Line,LinerCorp
+Sleeper,Platform 2 Section D,PadTech Industries,2023-03-05,30,88,active,good,Concrete railway sleeper with reinforcement,SLP-001,Heavy-Duty,SleeperTech
+Elastic Rail Clip,Junction Point E-67,RailTech Industries,2023-01-22,36,73,active,ok,Standard elastic rail clip with moderate wear,ERC-002,Model-X,ClipCorp
+Rail Pad,Maintenance Yard F,TrackMaster Corp,2023-04-18,24,95,active,good,Premium vibration dampening pad for high-traffic area,RP-002,Ultra-Heavy,PadTech
+Liner,Bridge Section G-89,ClipCorp Solutions,2022-11-30,60,45,under_maintenance,critical,Track liner showing signs of wear requiring immediate attention,LNR-002,Pro-Line,LinerCorp
+Sleeper,Platform 3 Section H,PadTech Industries,2023-02-15,30,82,active,good,Precast concrete sleeper with standard specifications,SLP-002,Standard,SleeperTech
+Elastic Rail Clip,Signal Box Area I,RailTech Industries,2023-03-12,36,67,active,ok,Rail clip in signal control area with regular inspection,ERC-003,Model-Y,ClipCorp
+Rail Pad,Depot Junction J-34,TrackMaster Corp,2023-05-08,24,89,active,good,High-performance rail pad for depot operations,RP-003,Depot-Grade,PadTech
+Liner,Tunnel Section K-12,ClipCorp Solutions,2022-10-25,60,91,active,good,Tunnel-grade liner with enhanced corrosion resistance,LNR-003,Tunnel-Pro,LinerCorp
+Sleeper,Freight Yard L-56,PadTech Industries,2023-01-30,30,76,active,ok,Heavy-duty sleeper for freight operations,SLP-003,Freight-Heavy,SleeperTech
+Elastic Rail Clip,Station Platform M,RailTech Industries,2023-04-05,36,84,active,good,Platform rail clip with passenger safety certification,ERC-004,Station-Grade,ClipCorp
+Rail Pad,Express Line N-78,TrackMaster Corp,2023-06-12,24,93,active,good,High-speed rail pad for express train operations,RP-004,Express-Pro,PadTech
+Liner,Curve Section O-23,ClipCorp Solutions,2022-09-18,60,62,active,ok,Curved track liner with specialized geometry,LNR-004,Curve-Spec,LinerCorp
+Sleeper,Industrial Siding P,PadTech Industries,2023-02-28,30,71,active,ok,Industrial-grade sleeper for heavy cargo loads,SLP-004,Industrial,SleeperTech
+Elastic Rail Clip,Maintenance Shop Q,RailTech Industries,2023-05-15,36,39,under_maintenance,critical,Shop area rail clip requiring urgent replacement,ERC-005,Workshop,ClipCorp
+Rail Pad,Loading Dock R-45,TrackMaster Corp,2023-07-22,24,87,active,good,Specialized pad for loading dock operations,RP-005,Dock-Spec,PadTech
+Liner,Switching Yard S-67,ClipCorp Solutions,2022-08-14,60,94,active,good,Switching yard liner with enhanced durability,LNR-005,Switch-Pro,LinerCorp
+Sleeper,Passenger Terminal T,PadTech Industries,2023-03-18,30,79,active,ok,Terminal sleeper with aesthetic considerations,SLP-005,Terminal-Grade,SleeperTech
+Elastic Rail Clip,Fuel Depot U-12,RailTech Industries,2023-06-08,36,81,active,good,Fuel depot rail clip with safety specifications,ERC-006,Safety-Pro,ClipCorp
+Rail Pad,Inspection Point V,TrackMaster Corp,2023-08-15,24,96,active,good,Inspection area pad with monitoring capabilities,RP-006,Monitor-Pro,PadTech
+Liner,Emergency Siding W-34,ClipCorp Solutions,2022-07-20,60,55,active,ok,Emergency siding liner for safety operations,LNR-006,Emergency,LinerCorp
+Sleeper,Control Tower X-89,PadTech Industries,2023-04-12,30,83,active,good,Control area sleeper with communication cable routing,SLP-006,Control-Spec,SleeperTech
+Elastic Rail Clip,Wash Bay Y-56,RailTech Industries,2023-07-25,36,68,active,ok,Wash bay rail clip with corrosion resistance,ERC-007,Wash-Resistant,ClipCorp
+Rail Pad,Test Track Z-78,TrackMaster Corp,2023-09-18,24,91,active,good,Test track pad for equipment validation,RP-007,Test-Grade,PadTech
+Liner,Overpass Section AA,ClipCorp Solutions,2022-06-15,60,86,active,good,Overpass liner with structural support features,LNR-007,Bridge-Pro,LinerCorp
+Sleeper,Underpass Section BB,PadTech Industries,2023-05-22,30,74,active,ok,Underpass sleeper with drainage considerations,SLP-007,Drainage-Pro,SleeperTech
+Elastic Rail Clip,Parking Yard CC-23,RailTech Industries,2023-08-30,36,77,active,ok,Parking yard clip for rolling stock storage,ERC-008,Storage-Grade,ClipCorp
+Rail Pad,Workshop DD-45,TrackMaster Corp,2023-10-12,24,88,active,good,Workshop rail pad for maintenance operations,RP-008,Workshop-Pro,PadTech
+Liner,Signal Bridge EE,ClipCorp Solutions,2022-05-28,60,92,active,good,Signal bridge liner with cable management,LNR-008,Signal-Pro,LinerCorp
+Sleeper,Crossover Point FF,PadTech Industries,2023-06-15,30,65,active,ok,Crossover sleeper for track intersection,SLP-008,Crossover,SleeperTech
+Elastic Rail Clip,Service Road GG-67,RailTech Industries,2023-09-08,36,85,active,good,Service road clip for maintenance vehicle access,ERC-009,Service-Pro,ClipCorp
+Rail Pad,Equipment Shed HH,TrackMaster Corp,2023-11-22,24,90,active,good,Equipment storage area rail pad,RP-009,Storage-Pro,PadTech
+Liner,Access Bridge II-89,ClipCorp Solutions,2022-04-18,60,58,active,ok,Access bridge liner for personnel crossing,LNR-009,Access-Pro,LinerCorp
+Sleeper,Safety Zone JJ-12,PadTech Industries,2023-07-28,30,80,active,good,Safety zone sleeper with emergency features,SLP-009,Safety-Pro,SleeperTech
+Elastic Rail Clip,Crane Area KK-34,RailTech Industries,2023-10-15,36,72,active,ok,Crane area clip for heavy lifting operations,ERC-010,Crane-Spec,ClipCorp
+Rail Pad,Buffer Zone LL-56,TrackMaster Corp,2023-12-05,24,94,active,good,Buffer zone pad for impact absorption,RP-010,Buffer-Pro,PadTech
+Liner,Drainage Channel MM,ClipCorp Solutions,2022-03-25,60,87,active,good,Drainage channel liner with water management,LNR-010,Drain-Pro,LinerCorp
+Sleeper,Platform Edge NN-78,PadTech Industries,2023-08-18,30,69,active,ok,Platform edge sleeper with safety barriers,SLP-010,Edge-Safe,SleeperTech
+Elastic Rail Clip,Ventilation Shaft OO,RailTech Industries,2023-11-12,36,83,active,good,Ventilation area clip with airflow considerations,ERC-011,Vent-Pro,ClipCorp
+Rail Pad,Emergency Exit PP-23,TrackMaster Corp,2024-01-08,24,89,active,good,Emergency exit rail pad with safety certification,RP-011,Emergency-Pro,PadTech
+Liner,Cable Duct QQ-45,ClipCorp Solutions,2022-02-14,60,75,active,ok,Cable duct liner for electrical systems,LNR-011,Cable-Pro,LinerCorp
+Sleeper,Monitoring Station RR,PadTech Industries,2023-09-25,30,86,active,good,Monitoring station sleeper with sensor integration,SLP-011,Monitor-Pro,SleeperTech
+Elastic Rail Clip,Fire Station SS-67,RailTech Industries,2023-12-18,36,78,active,ok,Fire station area clip with emergency access,ERC-012,Fire-Safe,ClipCorp
+Rail Pad,First Aid Point TT,TrackMaster Corp,2024-02-15,24,92,active,good,First aid point rail pad with medical equipment access,RP-012,Medical-Pro,PadTech
+Liner,Communication Tower UU,ClipCorp Solutions,2022-01-20,60,81,active,good,Communication tower liner with signal equipment,LNR-012,Comm-Pro,LinerCorp
+Sleeper,Weather Station VV-89,PadTech Industries,2023-10-30,30,73,active,ok,Weather monitoring sleeper with instrument mounting,SLP-012,Weather-Pro,SleeperTech
+Elastic Rail Clip,Security Gate WW-12,RailTech Industries,2024-01-25,36,88,active,good,Security gate clip with access control integration,ERC-013,Security-Pro,ClipCorp
+Rail Pad,Visitor Center XX-34,TrackMaster Corp,2024-03-12,24,95,active,good,Visitor center rail pad with public access considerations,RP-013,Public-Pro,PadTech
+Liner,Information Board YY,ClipCorp Solutions,2021-12-18,60,42,retired,critical,Information board liner requiring complete replacement,LNR-013,Info-Pro,LinerCorp
+Sleeper,Archive Building ZZ-56,PadTech Industries,2023-11-15,30,84,active,good,Archive building sleeper with document storage access,SLP-013,Archive-Pro,SleeperTech
