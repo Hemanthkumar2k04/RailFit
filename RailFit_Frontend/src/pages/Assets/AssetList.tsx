@@ -89,7 +89,7 @@ export default function AssetList() {
             if (assetFilters.location) params.append('location', assetFilters.location)
             if (assetFilters.status) params.append('status', assetFilters.status)
 
-            const response = await fetch(`http://localhost:5000/api/assets?${params}`, {
+            const response = await fetch(`http://localhost:5000/api/assets/?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

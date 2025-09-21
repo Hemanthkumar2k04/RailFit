@@ -40,7 +40,7 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch('http://localhost:5000/api/assets', {
+      const response = await fetch('http://localhost:5000/api/assets/', {
         method: 'POST',
         headers,
         body: JSON.stringify(formData),
