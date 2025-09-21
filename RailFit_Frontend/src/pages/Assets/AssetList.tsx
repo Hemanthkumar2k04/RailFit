@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,110 +18,132 @@ import {
     MapPin,
     TrendingUp,
     CheckCircle,
-    Clock
+    Clock,
+    AlertCircle,
+    Loader2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react'
 
-// Mock data for assets
-const mockAssets = [
-    {
-        id: 'RF-2024-001234',
-        type: 'Elastic Rail Clips',
-        location: 'Mumbai-Delhi Route, KM 156.3',
-        zone: 'Central Railway',
-        healthScore: 92,
-        status: 'Excellent',
-        lastInspection: '2024-09-10',
-        nextMaintenance: '2024-12-15',
-        vendor: 'Kalindee Rail Nirman',
-        installDate: '2024-01-15',
-        rul: '8.2 years',
-        riskLevel: 'Low'
-    },
-    {
-        id: 'RF-2024-001235',
-        type: 'Rail Pads',
-        location: 'Chennai-Bangalore Route, KM 89.7',
-        zone: 'Southern Railway',
-        healthScore: 78,
-        status: 'Good',
-        lastInspection: '2024-09-08',
-        nextMaintenance: '2024-11-20',
-        vendor: 'Texmaco Rail & Engineering',
-        installDate: '2023-11-20',
-        rul: '5.1 years',
-        riskLevel: 'Medium'
-    },
-    {
-        id: 'RF-2024-001236',
-        type: 'Sleepers',
-        location: 'Kolkata-Delhi Route, KM 234.1',
-        zone: 'Eastern Railway',
-        healthScore: 45,
-        status: 'Poor',
-        lastInspection: '2024-09-05',
-        nextMaintenance: '2024-10-01',
-        vendor: 'Railway Sleepers India',
-        installDate: '2020-08-10',
-        rul: '1.3 years',
-        riskLevel: 'High'
-    },
-    {
-        id: 'RF-2024-001237',
-        type: 'NFC-enabled Fittings',
-        location: 'Mumbai-Ahmedabad Route, KM 67.8',
-        zone: 'Western Railway',
-        healthScore: 88,
-        status: 'Excellent',
-        lastInspection: '2024-09-12',
-        nextMaintenance: '2025-01-10',
-        vendor: 'Smart Rail Solutions',
-        installDate: '2024-03-22',
-        rul: '9.5 years',
-        riskLevel: 'Low'
-    }
-]
-
-const getHealthColor = (score: number) => {
-    if (score >= 90) return 'text-success bg-success/10 border-success/20'
-    if (score >= 70) return 'text-primary bg-primary/10 border-primary/20'
-    if (score >= 50) return 'text-warning bg-warning/10 border-warning/20'
-    return 'text-danger bg-danger/10 border-danger/20'
+// Types for API response
+interface Asset {
+    asset_id: string
+    type: string
+    location: string
+    health_score?: number
+    status: string
+    install_date?: string
+    vendor_id?: string
+    created_at: string
+    updated_at: string
+    qr_code?: string
 }
 
-const getRiskColor = (risk: string) => {
-    switch (risk) {
-        case 'Low': return 'text-success bg-success/10'
-        case 'Medium': return 'text-warning bg-warning/10'
-        case 'High': return 'text-danger bg-danger/10'
-        default: return 'text-rail-gray bg-rail-gray/10'
-    }
+interface AssetListResponse {
+    assets: Asset[]
+    total: number
+    page: number
+    limit: number
+    total_pages: number
+    has_next: boolean
+    has_prev: boolean
 }
 
 export default function AssetList() {
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAssets, setSelectedAssets] = useState<string[]>([])
+    const [assets, setAssets] = useState<Asset[]>([])
+    const [pagination, setPagination] = useState({
+        total: 0,
+        page: 1,
+        limit: 20,
+        total_pages: 0,
+        has_next: false,
+        has_prev: false
+    })
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [filters, setFilters] = useState({
         assetType: '',
-        zone: '',
-        healthStatus: '',
-        vendor: ''
+        location: '',
+        status: ''
     })
 
-    const filteredAssets = mockAssets.filter(asset => {
-        const matchesSearch = asset.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            asset.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            asset.location.toLowerCase().includes(searchTerm.toLowerCase())
+    const fetchAssets = async (page: number = 1, searchQuery: string = '', assetFilters: any = {}) => {
+        setLoading(true)
+        setError(null)
+        
+        try {
+            const token = localStorage.getItem('jwt_token')
+            if (!token) {
+                throw new Error('No authentication token found')
+            }
 
-        const matchesType = !filters.assetType || asset.type === filters.assetType
-        const matchesZone = !filters.zone || asset.zone === filters.zone
-        const matchesHealth = !filters.healthStatus || asset.status === filters.healthStatus
-        const matchesVendor = !filters.vendor || asset.vendor === filters.vendor
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString()
+            })
 
-        return matchesSearch && matchesType && matchesZone && matchesHealth && matchesVendor
+            if (assetFilters.assetType) params.append('asset_type', assetFilters.assetType)
+            if (assetFilters.location) params.append('location', assetFilters.location)
+            if (assetFilters.status) params.append('status', assetFilters.status)
+
+            const response = await fetch(`http://localhost:5000/api/assets?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data: AssetListResponse = await response.json()
+            setAssets(data.assets || [])
+            setPagination({
+                total: data.total ?? 0,
+                page: data.page ?? 1,
+                limit: data.limit ?? 20,
+                total_pages: data.total_pages ?? 0,
+                has_next: data.has_next ?? false,
+                has_prev: data.has_prev ?? false
+            })
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch assets')
+            console.error('Error fetching assets:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchAssets()
+    }, [])
+
+    // Ensure assets is always an array to prevent filter errors
+    const safeAssets = assets || []
+
+    const handleSearch = () => {
+        fetchAssets(1, searchTerm, filters)
+    }
+
+    const handlePageChange = (newPage: number) => {
+        fetchAssets(newPage, searchTerm, filters)
+    }
+
+    const filteredAssets = safeAssets.filter(asset => {
+        if (!searchTerm) return true
+        const search = searchTerm.toLowerCase()
+        return (
+            asset.asset_id.toLowerCase().includes(search) ||
+            asset.type.toLowerCase().includes(search) ||
+            asset.location.toLowerCase().includes(search)
+        )
     })
 
-    const toggleAssetSelection = (assetId: string) => {
+    const toggleSelectAsset = (assetId: string) => {
         setSelectedAssets(prev =>
             prev.includes(assetId)
                 ? prev.filter(id => id !== assetId)
@@ -129,11 +151,67 @@ export default function AssetList() {
         )
     }
 
-    const selectAllAssets = () => {
-        setSelectedAssets(
-            selectedAssets.length === filteredAssets.length
+    const toggleSelectAll = () => {
+        setSelectedAssets(prev =>
+            prev.length === filteredAssets.length
                 ? []
-                : filteredAssets.map(asset => asset.id)
+                : filteredAssets.map(asset => asset.asset_id)
+        )
+    }
+
+    const getHealthStatus = (healthScore?: number): string => {
+        if (!healthScore) return 'Unknown'
+        if (healthScore >= 90) return 'Excellent'
+        if (healthScore >= 70) return 'Good'
+        if (healthScore >= 50) return 'Fair'
+        return 'Critical'
+    }
+
+    const getHealthColor = (score?: number) => {
+        if (!score) return 'text-gray-500 bg-gray-100 border-gray-200'
+        if (score >= 90) return 'text-emerald-600 bg-emerald-100 border-emerald-200'
+        if (score >= 70) return 'text-slate-600 bg-slate-100 border-slate-200'
+        if (score >= 50) return 'text-amber-600 bg-amber-100 border-amber-200'
+        return 'text-rose-600 bg-rose-100 border-rose-200'
+    }
+
+    const getRiskLevel = (healthScore?: number): string => {
+        if (!healthScore) return 'Unknown'
+        if (healthScore >= 80) return 'Low'
+        if (healthScore >= 60) return 'Medium'
+        return 'High'
+    }
+
+    const getRiskColor = (risk: string) => {
+        switch (risk) {
+            case 'Low': return 'text-emerald-600 bg-emerald-100'
+            case 'Medium': return 'text-amber-600 bg-amber-100'
+            case 'High': return 'text-rose-600 bg-rose-100'
+            default: return 'text-gray-600 bg-gray-100'
+        }
+    }
+
+    const formatDate = (dateString?: string): string => {
+        if (!dateString) return 'N/A'
+        return new Date(dateString).toLocaleDateString()
+    }
+
+    if (error) {
+        return (
+            <div className="p-6 space-y-6">
+                <Card>
+                    <CardContent className="flex items-center justify-center py-8">
+                        <div className="text-center">
+                            <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">Failed to Load Assets</h3>
+                            <p className="text-gray-600 mb-4">{error}</p>
+                            <Button onClick={() => fetchAssets()} className="mx-auto">
+                                Try Again
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         )
     }
 
@@ -143,11 +221,11 @@ export default function AssetList() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-primary">Asset Management</h1>
-                    <p className="text-rail-gray mt-1">Comprehensive railway infrastructure asset tracking and management</p>
+                    <p className="text-muted-foreground mt-1">Comprehensive railway infrastructure asset tracking and management</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button className="bg-white text-black hover:bg-gray-100">
-                        <Plus className="h-4 w-4 mr-2 " />
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Plus className="h-4 w-4 mr-2" />
                         Add New Asset
                     </Button>
                     <Button variant="outline">
@@ -169,225 +247,152 @@ export default function AssetList() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="border-l-4 border-l-primary">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rail-gray">Total Assets</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
                         <div className="text-2xl">📦</div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-primary">2,847</div>
-                        <p className="text-xs text-success mt-1">+127 this month</p>
+                        <div className="text-3xl font-bold text-primary">{(pagination.total || 0).toLocaleString()}</div>
+                        <p className="text-xs text-emerald-600 mt-1">Real-time count</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-success">
+                <Card className="border-l-4 border-l-emerald-400">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rail-gray">Active Assets</CardTitle>
-                        <CheckCircle className="h-5 w-5 text-success" />
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Active Assets</CardTitle>
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-success">2,654</div>
-                        <p className="text-xs text-rail-gray mt-1">93.2% operational</p>
+                        <div className="text-3xl font-bold text-emerald-600">
+                            {safeAssets.filter(a => a.status === 'active').length}
+                        </div>
+                        <p className="text-xs text-emerald-600 mt-1">Operational status</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-warning">
+                <Card className="border-l-4 border-l-amber-400">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rail-gray">Need Maintenance</CardTitle>
-                        <Clock className="h-5 w-5 text-warning" />
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Maintenance Queue</CardTitle>
+                        <Clock className="h-5 w-5 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-warning">175</div>
-                        <p className="text-xs text-rail-gray mt-1">Next 30 days</p>
+                        <div className="text-3xl font-bold text-amber-600">
+                            {safeAssets.filter(a => a.status === 'needs_maintenance').length}
+                        </div>
+                        <p className="text-xs text-amber-600 mt-1">Pending maintenance</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-info">
+                <Card className="border-l-4 border-l-rose-400">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rail-gray">Recently Added</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-info" />
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Critical Alerts</CardTitle>
+                        <AlertCircle className="h-5 w-5 text-rose-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-info">18</div>
-                        <p className="text-xs text-rail-gray mt-1">Last 7 days</p>
+                        <div className="text-3xl font-bold text-rose-600">
+                            {safeAssets.filter(a => (a.health_score || 0) < 50).length}
+                        </div>
+                        <p className="text-xs text-rose-600 mt-1">Immediate attention</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Search and Filter Controls */}
+            {/* Search and Filter Section */}
             <Card>
-                <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row gap-4 items-center">
-                        {/* Global Search */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-rail-gray h-4 w-4" />
-                            <Input
-                                placeholder="Search by Asset ID, Type, Location..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-
-                        {/* Quick Filters */}
-                        <div className="flex gap-3 items-center">
-                            <select
-                                value={filters.assetType}
-                                onChange={(e) => setFilters(prev => ({ ...prev, assetType: e.target.value }))}
-                                className="w-48 px-3 py-2 border border-input bg-background rounded-md text-sm"
-                            >
-                                <option value="">All Asset Types</option>
-                                <option value="Elastic Rail Clips">Elastic Rail Clips</option>
-                                <option value="Rail Pads">Rail Pads</option>
-                                <option value="Sleepers">Sleepers</option>
-                                <option value="NFC-enabled Fittings">NFC-enabled Fittings</option>
-                            </select>
-
-                            <select
-                                value={filters.zone}
-                                onChange={(e) => setFilters(prev => ({ ...prev, zone: e.target.value }))}
-                                className="w-48 px-3 py-2 border border-input bg-background rounded-md text-sm"
-                            >
-                                <option value="">All Railway Zones</option>
-                                <option value="Central Railway">Central Railway</option>
-                                <option value="Southern Railway">Southern Railway</option>
-                                <option value="Eastern Railway">Eastern Railway</option>
-                                <option value="Western Railway">Western Railway</option>
-                            </select>
-
-                            <select
-                                value={filters.healthStatus}
-                                onChange={(e) => setFilters(prev => ({ ...prev, healthStatus: e.target.value }))}
-                                className="w-48 px-3 py-2 border border-input bg-background rounded-md text-sm"
-                            >
-                                <option value="">All Health Status</option>
-                                <option value="Excellent">Excellent (90-100)</option>
-                                <option value="Good">Good (70-89)</option>
-                                <option value="Fair">Fair (50-69)</option>
-                                <option value="Poor">Poor (0-49)</option>
-                            </select>
-
-                            {/* View Toggle */}
-                            <div className="flex border rounded-lg">
-                                <Button
-                                    variant={viewMode === 'table' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('table')}
-                                >
-                                    <List className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('grid')}
-                                >
-                                    <Grid3X3 className="h-4 w-4" />
-                                </Button>
+                <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center space-x-4 flex-1">
+                            <div className="relative flex-1 max-w-sm">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                <Input
+                                    placeholder="Search assets..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                    className="pl-10"
+                                />
                             </div>
+                            <Button onClick={handleSearch} variant="outline">
+                                Search
+                            </Button>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant={viewMode === 'table' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('table')}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('grid')}
+                            >
+                                <Grid3X3 className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
-
-                    {/* Bulk Actions Bar */}
-                    {selectedAssets.length > 0 && (
-                        <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-primary">
-                                    {selectedAssets.length} asset(s) selected
-                                </span>
-                                <div className="flex gap-2">
-                                    <Button size="sm" variant="outline">
-                                        <Calendar className="h-4 w-4 mr-2" />
-                                        Schedule Inspection
-                                    </Button>
-                                    <Button size="sm" variant="outline">
-                                        <QrCode className="h-4 w-4 mr-2" />
-                                        Generate QR Codes
-                                    </Button>
-                                    <Button size="sm" variant="outline">
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Export Selected
-                                    </Button>
-                                </div>
-                            </div>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <span className="ml-2 text-muted-foreground">Loading assets...</span>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Asset Table/Grid View */}
-            <Card>
-                <CardContent className="p-0">
-                    {viewMode === 'table' ? (
+                    ) : viewMode === 'table' ? (
                         <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-rail-light border-b">
-                                    <tr>
-                                        <th className="p-4 text-left">
+                            <table className="w-full table-auto">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left py-3 px-4 font-medium">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
-                                                onChange={selectAllAssets}
-                                                className="rounded border-gray-300"
+                                                onChange={toggleSelectAll}
+                                                className="rounded"
                                             />
                                         </th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Asset ID</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Type</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Location</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Health Score</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Last Inspection</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">RUL</th>
-                                        <th className="p-4 text-left font-medium text-rail-gray">Actions</th>
+                                        <th className="text-left py-3 px-4 font-medium">Asset ID</th>
+                                        <th className="text-left py-3 px-4 font-medium">Type</th>
+                                        <th className="text-left py-3 px-4 font-medium">Location</th>
+                                        <th className="text-left py-3 px-4 font-medium">Health Score</th>
+                                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                                        <th className="text-left py-3 px-4 font-medium">Install Date</th>
+                                        <th className="text-left py-3 px-4 font-medium">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredAssets.map((asset) => (
-                                        <tr key={asset.id} className="border-b hover:bg-rail-light/50">
-                                            <td className="p-4">
+                                        <tr key={asset.asset_id} className="border-b hover:bg-muted/50">
+                                            <td className="py-3 px-4">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedAssets.includes(asset.id)}
-                                                    onChange={() => toggleAssetSelection(asset.id)}
-                                                    className="rounded border-gray-300"
+                                                    checked={selectedAssets.includes(asset.asset_id)}
+                                                    onChange={() => toggleSelectAsset(asset.asset_id)}
+                                                    className="rounded"
                                                 />
                                             </td>
-                                            <td className="p-4">
-                                                <div className="font-mono text-sm font-semibold text-primary">
-                                                    {asset.id}
-                                                </div>
-                                                <div className="text-xs text-rail-gray">{asset.zone}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="font-medium">{asset.type}</div>
-                                                <div className="text-xs text-rail-gray">{asset.vendor}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center text-sm">
-                                                    <MapPin className="h-3 w-3 mr-1 text-rail-gray" />
-                                                    {asset.location}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge className={getHealthColor(asset.healthScore)}>
-                                                        {asset.healthScore}%
-                                                    </Badge>
-                                                    <span className="text-xs text-rail-gray">{asset.status}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-sm">{asset.lastInspection}</td>
-                                            <td className="p-4">
-                                                <div className="text-sm font-medium">{asset.rul}</div>
-                                                <Badge className={getRiskColor(asset.riskLevel)} variant="outline">
-                                                    {asset.riskLevel} Risk
+                                            <td className="py-3 px-4 font-mono text-sm">{asset.asset_id.slice(0, 8)}</td>
+                                            <td className="py-3 px-4">{asset.type}</td>
+                                            <td className="py-3 px-4">{asset.location}</td>
+                                            <td className="py-3 px-4">
+                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
+                                                    {asset.health_score || 'N/A'}
                                                 </Badge>
                                             </td>
-                                            <td className="p-4">
-                                                <div className="flex gap-1">
-                                                    <Button size="sm" variant="ghost">
-                                                        <Eye className="h-4 w-4" />
+                                            <td className="py-3 px-4">
+                                                <Badge variant={asset.status === 'active' ? 'default' : 'outline'} className="text-xs">
+                                                    {getHealthStatus(asset.health_score)}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4 text-sm">{formatDate(asset.install_date)}</td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Button size="sm" variant="outline">
+                                                        <Eye className="h-4 w-4 mr-1" />
+                                                        View
                                                     </Button>
-                                                    <Button size="sm" variant="ghost">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button size="sm" variant="ghost">
+                                                    <Button size="sm" variant="outline">
                                                         <QrCode className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -398,45 +403,40 @@ export default function AssetList() {
                             </table>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredAssets.map((asset) => (
-                                <Card key={asset.id} className="hover:shadow-lg transition-shadow">
+                                <Card key={asset.asset_id} className="hover:shadow-md transition-shadow">
                                     <CardHeader className="pb-3">
-                                        <div className="flex items-center justify-between">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedAssets.includes(asset.id)}
-                                                onChange={() => toggleAssetSelection(asset.id)}
-                                                className="rounded border-gray-300"
-                                            />
-                                            <Badge className={getHealthColor(asset.healthScore)}>
-                                                {asset.healthScore}%
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-semibold text-lg">{asset.type}</h3>
+                                                <p className="text-sm text-muted-foreground font-mono">{asset.asset_id.slice(0, 8)}</p>
+                                            </div>
+                                            <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
+                                                {getHealthStatus(asset.health_score)}
                                             </Badge>
                                         </div>
-                                        <CardTitle className="text-lg font-mono text-primary">
-                                            {asset.id}
-                                        </CardTitle>
-                                        <p className="text-sm text-rail-gray">{asset.type}</p>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex items-center">
-                                                <MapPin className="h-3 w-3 mr-2 text-rail-gray" />
-                                                {asset.location}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center text-sm">
+                                                <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                                                <span className="truncate">{asset.location}</span>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-rail-gray">RUL:</span>
-                                                <span className="font-medium">{asset.rul}</span>
+                                            <div className="flex items-center text-sm">
+                                                <TrendingUp className="h-4 w-4 mr-2 text-muted-foreground" />
+                                                <span>Health: {asset.health_score || 'N/A'}</span>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-rail-gray">Risk:</span>
-                                                <Badge className={getRiskColor(asset.riskLevel)} variant="outline">
-                                                    {asset.riskLevel}
-                                                </Badge>
+                                            <div className="flex items-center text-sm">
+                                                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                                                <span>Installed: {formatDate(asset.install_date)}</span>
                                             </div>
+                                            <Badge className={`${getRiskColor(getRiskLevel(asset.health_score))} text-xs w-fit`}>
+                                                {getRiskLevel(asset.health_score)} Risk
+                                            </Badge>
                                         </div>
-                                        <div className="flex gap-1 mt-4">
-                                            <Button size="sm" variant="outline" className="flex-1">
+                                        <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                                            <Button size="sm" variant="outline">
                                                 <Eye className="h-4 w-4 mr-1" />
                                                 View
                                             </Button>
@@ -451,22 +451,47 @@ export default function AssetList() {
                     )}
 
                     {/* Pagination */}
-                    <div className="flex items-center justify-between p-4 border-t">
-                        <div className="text-sm text-rail-gray">
-                            Showing {filteredAssets.length} of {mockAssets.length} assets
+                    <div className="flex items-center justify-between p-4 border-t mt-6">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total || 0)} of {pagination.total || 0} assets
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" disabled>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={!pagination.has_prev || loading}
+                                onClick={() => handlePageChange(pagination.page - 1)}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
                                 Previous
                             </Button>
-                            <Button variant="outline" size="sm" className="bg-primary text-white">
-                                1
-                            </Button>
-                            <Button variant="outline" size="sm">
-                                2
-                            </Button>
-                            <Button variant="outline" size="sm">
+                            
+                            {/* Page numbers */}
+                            {Array.from({ length: Math.min(5, pagination.total_pages || 0) }, (_, i) => {
+                                const pageNum = Math.max(1, pagination.page - 2) + i
+                                if (pageNum > (pagination.total_pages || 0)) return null
+                                
+                                return (
+                                    <Button
+                                        key={pageNum}
+                                        variant={pageNum === pagination.page ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handlePageChange(pageNum)}
+                                        disabled={loading}
+                                    >
+                                        {pageNum}
+                                    </Button>
+                                )
+                            })}
+                            
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={!pagination.has_next || loading}
+                                onClick={() => handlePageChange(pagination.page + 1)}
+                            >
                                 Next
+                                <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>

@@ -125,16 +125,25 @@ async def create_asset(
             detail=f"Failed to create asset: {str(e)}"
         )
 
-@router.get("/", response_model=List[Asset])
+class AssetListResponse(BaseModel):
+    assets: List[Asset]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+@router.get("/", response_model=AssetListResponse)
 async def get_assets(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
     asset_type: Optional[str] = Query(None, description="Filter by asset type"),
     location: Optional[str] = Query(None, description="Filter by location"),
     status: Optional[str] = Query(None, description="Filter by status"),
     current_user: Dict[str, Any] = Depends(get_current_user_from_token)
 ):
-    """Get all assets with optional filtering"""
+    """Get all assets with pagination and optional filtering"""
     try:
         async with httpx.AsyncClient() as client:
             headers = {
@@ -143,7 +152,10 @@ async def get_assets(
                 "Content-Type": "application/json"
             }
             
-            # Build query parameters
+            # Calculate offset from page number
+            skip = (page - 1) * limit
+            
+            # Build query parameters for data fetch
             params = {}
             if asset_type:
                 params["type"] = f"eq.{asset_type}"
@@ -154,7 +166,34 @@ async def get_assets(
             
             params["limit"] = str(limit)
             params["offset"] = str(skip)
+            params["order"] = "created_at.desc"  # Order by most recent first
             
+            # Get total count for pagination
+            count_params = {}
+            if asset_type:
+                count_params["type"] = f"eq.{asset_type}"
+            if location:
+                count_params["location"] = f"ilike.%{location}%"
+            if status:
+                count_params["status"] = f"eq.{status}"
+            
+            # Fetch total count
+            count_headers = headers.copy()
+            count_headers["Prefer"] = "count=exact"
+            
+            count_response = await client.head(
+                f"{SUPABASE_URL}/rest/v1/assets",
+                headers=count_headers,
+                params=count_params
+            )
+            
+            total = 0
+            if "content-range" in count_response.headers:
+                content_range = count_response.headers["content-range"]
+                if "/" in content_range:
+                    total = int(content_range.split("/")[1])
+            
+            # Fetch paginated data
             response = await client.get(
                 f"{SUPABASE_URL}/rest/v1/assets",
                 headers=headers,
@@ -162,7 +201,22 @@ async def get_assets(
             )
             
             if response.status_code == 200:
-                return response.json()
+                assets = response.json()
+                
+                # Calculate pagination metadata
+                total_pages = (total + limit - 1) // limit  # Ceiling division
+                has_next = page < total_pages
+                has_prev = page > 1
+                
+                return AssetListResponse(
+                    assets=assets,
+                    total=total,
+                    page=page,
+                    limit=limit,
+                    total_pages=total_pages,
+                    has_next=has_next,
+                    has_prev=has_prev
+                )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -85,11 +85,11 @@ export default function Dashboard() {
 
   const getHealthColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'excellent': return 'bg-green-500';
-      case 'good': return 'bg-blue-500';
-      case 'fair': return 'bg-yellow-500';
-      case 'critical': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'excellent': return 'bg-emerald-400';
+      case 'good': return 'bg-slate-400';
+      case 'fair': return 'bg-amber-400';
+      case 'critical': return 'bg-rose-400';
+      default: return 'bg-gray-400';
     }
   };
 
@@ -145,20 +145,20 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-3xl font-bold">{dashboard.totalAssets.toLocaleString()}</div>
             <div className="flex items-center text-sm text-muted-foreground mt-1">
-              <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+              <TrendingUp className="h-4 w-4 mr-1 text-emerald-500" />
               <span>+127 this quarter</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full -mr-16 -mt-16"></div>
+        <Card className="border-l-4 border-l-emerald-400 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/5 rounded-full -mr-16 -mt-16"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Operational Assets</CardTitle>
-            <div className="h-4 w-4 rounded-full bg-green-500 animate-pulse" />
+            <div className="h-4 w-4 rounded-full bg-emerald-400 animate-pulse" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-700">{dashboard.operationalAssets.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-emerald-600">{dashboard.operationalAssets.toLocaleString()}</div>
             <div className="mt-2 space-y-2">
               <Progress value={operationalPercentage} className="h-2" />
               <Badge variant="secondary" className="text-xs">
@@ -168,14 +168,14 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-yellow-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full -mr-16 -mt-16"></div>
+        <Card className="border-l-4 border-l-amber-400 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/5 rounded-full -mr-16 -mt-16"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Maintenance Queue</CardTitle>
-            <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />
+            <AlertTriangleIcon className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-700">{dashboard.maintenanceQueue}</div>
+            <div className="text-3xl font-bold text-amber-600">{dashboard.maintenanceQueue}</div>
             <div className="mt-2 space-y-2">
               <Progress value={maintenancePercentage} className="h-2" />
               <Badge variant="outline" className="text-xs">
@@ -185,14 +185,14 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16"></div>
+        <Card className="border-l-4 border-l-rose-400 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-400/5 rounded-full -mr-16 -mt-16"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Critical Alerts</CardTitle>
-            <div className="h-4 w-4 rounded-full bg-red-500 animate-pulse" />
+            <div className="h-4 w-4 rounded-full bg-rose-400 animate-pulse" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-700">{dashboard.criticalAlerts}</div>
+            <div className="text-3xl font-bold text-rose-600">{dashboard.criticalAlerts}</div>
             <div className="mt-2">
               <Badge variant="destructive" className="text-xs">
                 Immediate Action Required
@@ -217,22 +217,22 @@ export default function Dashboard() {
                 <div className="text-sm font-medium text-center">Asset Health Distribution</div>
                 <div className="w-full h-6 bg-muted rounded-full overflow-hidden flex shadow-inner">
                   <div 
-                    className="h-full bg-green-500 flex-none transition-all duration-1000"
+                    className="h-full bg-emerald-400 flex-none transition-all duration-1000"
                     style={{ width: `${((dashboard.assetDistribution?.excellent ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
                     title={`Excellent: ${dashboard.assetDistribution?.excellent ?? 0} assets`}
                   />
                   <div 
-                    className="h-full bg-blue-500 flex-none transition-all duration-1000"
+                    className="h-full bg-slate-400 flex-none transition-all duration-1000"
                     style={{ width: `${((dashboard.assetDistribution?.good ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
                     title={`Good: ${dashboard.assetDistribution?.good ?? 0} assets`}
                   />
                   <div 
-                    className="h-full bg-yellow-500 flex-none transition-all duration-1000"
+                    className="h-full bg-amber-400 flex-none transition-all duration-1000"
                     style={{ width: `${((dashboard.assetDistribution?.fair ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
                     title={`Fair: ${dashboard.assetDistribution?.fair ?? 0} assets`}
                   />
                   <div 
-                    className="h-full bg-red-500 flex-none transition-all duration-1000"
+                    className="h-full bg-rose-400 flex-none transition-all duration-1000"
                     style={{ width: `${((dashboard.assetDistribution?.critical ?? 0) / (dashboard.totalAssets || 1)) * 100}%` }}
                     title={`Critical: ${dashboard.assetDistribution?.critical ?? 0} assets`}
                   />
@@ -242,10 +242,10 @@ export default function Dashboard() {
               {/* Enhanced Legend with Progress Bars */}
               <div className="space-y-3">
                 {[
-                  { label: 'Excellent', value: dashboard.assetDistribution?.excellent ?? 0, color: 'bg-green-500' },
-                  { label: 'Good', value: dashboard.assetDistribution?.good ?? 0, color: 'bg-blue-500' },
-                  { label: 'Fair', value: dashboard.assetDistribution?.fair ?? 0, color: 'bg-yellow-500' },
-                  { label: 'Critical', value: dashboard.assetDistribution?.critical ?? 0, color: 'bg-red-500' }
+                  { label: 'Excellent', value: dashboard.assetDistribution?.excellent ?? 0, color: 'bg-emerald-400' },
+                  { label: 'Good', value: dashboard.assetDistribution?.good ?? 0, color: 'bg-slate-400' },
+                  { label: 'Fair', value: dashboard.assetDistribution?.fair ?? 0, color: 'bg-amber-400' },
+                  { label: 'Critical', value: dashboard.assetDistribution?.critical ?? 0, color: 'bg-rose-400' }
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -282,12 +282,12 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 rounded-lg border bg-muted/30">
-                  <div className="text-3xl font-bold text-green-600">{dashboard.systemUptime}%</div>
+                  <div className="text-3xl font-bold text-emerald-500">{dashboard.systemUptime}%</div>
                   <div className="text-xs text-muted-foreground mt-1">System Uptime</div>
                   <Progress value={dashboard.systemUptime} className="mt-2 h-1" />
                 </div>
                 <div className="text-center p-4 rounded-lg border bg-muted/30">
-                  <div className="text-3xl font-bold text-blue-600">{dashboard.avgResponseTime}s</div>
+                  <div className="text-3xl font-bold text-slate-500">{dashboard.avgResponseTime}s</div>
                   <div className="text-xs text-muted-foreground mt-1">Avg Response Time</div>
                   <div className="mt-2 flex justify-center">
                     <Badge variant={dashboard.avgResponseTime < 2 ? "secondary" : "outline"} className="text-xs">
@@ -304,8 +304,8 @@ export default function Dashboard() {
                     <span className="font-medium text-sm">{zone.name}</span>
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full animate-pulse ${
-                        zone.status === 'Online' ? "bg-green-500" : 
-                        zone.status === 'Offline' ? "bg-red-500" : "bg-yellow-500"
+                        zone.status === 'Online' ? "bg-emerald-400" : 
+                        zone.status === 'Offline' ? "bg-rose-400" : "bg-amber-400"
                       }`}/>
                       <Badge 
                         variant={zone.status === 'Online' ? "secondary" : "outline"}

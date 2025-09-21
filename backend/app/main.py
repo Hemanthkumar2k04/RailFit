@@ -20,9 +20,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router, prefix="/api")
-app.include_router(assets.router, prefix="/api")
-app.include_router(dashboard.router)
+app.include_router(auth.router, prefix="/api")  # Results in /api/auth/*
+app.include_router(assets.router, prefix="/api")  # Results in /api/assets/*
+app.include_router(dashboard.router)  # Results in /api/dashboard (defined in router)
 
 @app.get("/")
 async def root():
