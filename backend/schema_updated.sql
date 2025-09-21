@@ -235,3 +235,138 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
 -- Success message
 SELECT 'RailFit database schema updated successfully! New enums: asset_condition (excellent, good, ok, critical) and asset_status (active, under_maintenance, retired)' as status;
+
+
+-- Create inspections table in Supabase
+-- Run this SQL in your Supabase SQL editor
+
+CREATE TABLE inspections (
+  inspection_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  asset_id VARCHAR(255) NOT NULL,
+  inspector_id UUID NOT NULL,
+  inspector_name VARCHAR(255) NOT NULL,
+  location VARCHAR(255) NOT NULL,
+  inspection_date TIMESTAMPTZ NOT NULL DEFAULT now(),
+  inspection_type VARCHAR(50) NOT NULL DEFAULT 'visual',
+  result VARCHAR(50) NOT NULL,
+  confidence_score DECIMAL(3,2), -- Values between 0.00 and 1.00
+  notes TEXT,
+  image_data TEXT, -- Base64 encoded image data
+  ai_prediction JSONB, -- Store AI prediction results as JSON
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  
+  -- Foreign key constraint (assuming you have a users table)
+  CONSTRAINT fk_inspector_id FOREIGN KEY (inspector_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_inspections_asset_id ON inspections(asset_id);
+CREATE INDEX idx_inspections_inspector_id ON inspections(inspector_id);
+CREATE INDEX idx_inspections_result ON inspections(result);
+CREATE INDEX idx_inspections_date ON inspections(inspection_date);
+CREATE INDEX idx_inspections_created_at ON inspections(created_at);
+
+-- Create RLS (Row Level Security) policies
+ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
+
+-- Policy: All authenticated users can read inspections
+CREATE POLICY "Allow authenticated users to read inspections" ON inspections
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- Policy: All authenticated users can create inspections
+CREATE POLICY "Allow authenticated users to create inspections" ON inspections
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+-- Policy: Users can update their own inspections
+CREATE POLICY "Allow users to update own inspections" ON inspections
+  FOR UPDATE TO authenticated
+  USING (inspector_id = auth.uid());
+
+-- Policy: Only admin and managers can delete inspections
+CREATE POLICY "Allow admin/manager to delete inspections" ON inspections
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.user_id = auth.uid() 
+      AND users.role IN ('admin', 'manager')
+    )
+  );
+
+-- Create trigger to automatically update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_inspections_updated_at 
+  BEFORE UPDATE ON inspections 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Insert some sample data for testing
+INSERT INTO inspections (
+  asset_id,
+  inspector_id,
+  inspector_name,
+  location,
+  inspection_type,
+  result,
+  confidence_score,
+  notes,
+  ai_prediction
+) VALUES 
+(
+  'AST-001',
+  (SELECT user_id FROM users WHERE email = 'admin@railfit.com' LIMIT 1),
+  'Admin User',
+  'Track Section A-1',
+  'ai_assisted',
+  'Defective',
+  0.87,
+  'Visible crack detected on rail joint',
+  '{"prediction": "Defective", "confidence": 0.87, "defect_probability": 0.87}'::jsonb
+),
+(
+  'AST-002',
+  (SELECT user_id FROM users WHERE email = 'inspector@railfit.com' LIMIT 1),
+  'Inspector User',
+  'Junction Point B-3',
+  'visual',
+  'Non-Defective',
+  0.92,
+  'All components within normal parameters',
+  '{"prediction": "Non-Defective", "confidence": 0.92, "defect_probability": 0.08}'::jsonb
+),
+(
+  'AST-003',
+  (SELECT user_id FROM users WHERE email = 'manager@railfit.com' LIMIT 1),
+  'Manager User',
+  'Bridge Section C-2',
+  'detailed',
+  'Non-Defective',
+  0.78,
+  'Minor wear observed but within acceptable limits',
+  '{"prediction": "Non-Defective", "confidence": 0.78, "defect_probability": 0.22}'::jsonb
+);
+
+-- Create view for inspection analytics
+CREATE OR REPLACE VIEW inspection_analytics AS
+SELECT 
+  COUNT(*) as total_inspections,
+  COUNT(CASE WHEN result = 'Defective' THEN 1 END) as defective_count,
+  COUNT(CASE WHEN result = 'Non-Defective' THEN 1 END) as non_defective_count,
+  ROUND(
+    (COUNT(CASE WHEN result = 'Defective' THEN 1 END) * 100.0 / COUNT(*)), 
+    2
+  ) as defect_rate,
+  ROUND(AVG(confidence_score), 2) as average_confidence,
+  COUNT(CASE WHEN inspection_date >= NOW() - INTERVAL '7 days' THEN 1 END) as recent_inspections_count
+FROM inspections
+WHERE created_at >= NOW() - INTERVAL '1 year'; -- Only count inspections from last year

@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/jszip": "^3.4.0",
+    "@types/qrcode": "^1.5.5"
+  }
+}
