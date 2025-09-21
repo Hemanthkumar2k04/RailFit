@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import Response
 from typing import List, Optional, Dict, Any
@@ -9,6 +9,7 @@ import json
 import qrcode
 import io
 import base64
+import csv
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -84,6 +85,13 @@ async def create_asset(
         qr_code = f"QR-{asset_id[:8]}"
         current_time = datetime.utcnow().isoformat() + "Z"
         
+        # Prepare metadata with default inspection and maintenance dates
+        metadata = asset.metadata or {}
+        if "last_inspection" not in metadata:
+            metadata["last_inspection"] = "2024-08-15"
+        if "next_maintenance" not in metadata:
+            metadata["next_maintenance"] = "2024-11-15"
+            
         asset_data = {
             "asset_id": asset_id,
             "type": asset.type,
@@ -97,7 +105,7 @@ async def create_asset(
             "predicted_rul": asset.predicted_rul,
             "status": asset.status,
             "qr_code": qr_code,
-            "metadata": asset.metadata or {},
+            "metadata": metadata,
             "created_at": current_time,
             "updated_at": current_time
         }
@@ -304,24 +312,17 @@ async def generate_asset_qr_code(
                 if assets:
                     asset = assets[0]
                     
-                    # Create comprehensive QR code data (Option 3)
+                    # Create simplified QR code data structure
                     qr_data = {
                         "asset_id": asset.get("asset_id"),
                         "type": asset.get("type"),
                         "location": asset.get("location"),
                         "status": asset.get("status"),
                         "health_score": asset.get("health_score"),
-                        "install_date": asset.get("install_date"),
-                        "vendor_id": asset.get("vendor_id"),
-                        "warranty_period": asset.get("warranty_period"),
-                        "predicted_rul": asset.get("predicted_rul"),
-                        "last_maintenance": asset.get("metadata", {}).get("last_maintenance") if asset.get("metadata") else None,
-                        "next_maintenance": asset.get("metadata", {}).get("next_maintenance") if asset.get("metadata") else None,
-                        "serial_number": asset.get("metadata", {}).get("serial_number") if asset.get("metadata") else None,
-                        "model": asset.get("metadata", {}).get("model") if asset.get("metadata") else None,
-                        "manufacturer": asset.get("metadata", {}).get("manufacturer") if asset.get("metadata") else None,
-                        "created_at": asset.get("created_at"),
-                        "qr_generated_at": datetime.now().isoformat()
+                        "predicted_rul_days": 120,  # Static value for all assets for now
+                        "last_inspection": asset.get("metadata", {}).get("last_inspection", "2024-08-15") if asset.get("metadata") else "2024-08-15",
+                        "next_maintenance": asset.get("metadata", {}).get("next_maintenance", "2024-11-15") if asset.get("metadata") else "2024-11-15",
+                        "qr_version": "1.0"
                     }
                     
                     # Remove None values to keep QR code clean
@@ -387,4 +388,198 @@ async def generate_asset_qr_code(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate QR code: {str(e)}"
+        )
+
+@router.post("/bulk-import")
+async def bulk_import_assets(
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user_from_token)
+):
+    """
+    Bulk import assets from CSV file
+    Expected CSV columns: type,location,vendor_id,install_date,warranty_period,health_score,status,description,serial_number,model,manufacturer
+    Note: `vendor_id` may be either an existing vendor UUID or a vendor name. If a name is provided,
+    the import will attempt to lookup the vendor and create it if not present.
+    """
+    # Check if user has manager or admin role
+    if current_user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions. Manager or Admin role required."
+        )
+    
+    try:
+        # Validate file type
+        if not file.filename.lower().endswith('.csv'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only CSV files are supported"
+            )
+        
+        # Read and parse CSV content
+        content = await file.read()
+        csv_content = content.decode('utf-8')
+        csv_reader = csv.DictReader(io.StringIO(csv_content))
+        
+        # Process each row
+        successful_imports = []
+        failed_imports = []
+        row_number = 1  # Start from 1 (header is row 0)
+        
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            for row in csv_reader:
+                row_number += 1
+                try:
+                    # Validate required fields
+                    if not row.get('type') or not row.get('location'):
+                        failed_imports.append({
+                            'row': row_number,
+                            'error': 'Missing required fields: type and location are mandatory',
+                            'data': row
+                        })
+                        continue
+                    
+                    # Generate asset data
+                    asset_id = str(uuid.uuid4())
+                    qr_code = f"QR-{asset_id[:8]}"
+                    current_time = datetime.utcnow().isoformat() + "Z"
+                    
+                    # Prepare metadata from additional fields
+                    metadata = {}
+                    if row.get('serial_number'):
+                        metadata['serial_number'] = row['serial_number']
+                    if row.get('model'):
+                        metadata['model'] = row['model']
+                    if row.get('manufacturer'):
+                        metadata['manufacturer'] = row['manufacturer']
+                    if row.get('description'):
+                        metadata['description'] = row['description']
+
+                    # Default values for inspection and maintenance
+                    metadata['last_inspection'] = "2024-08-15"
+                    metadata['next_maintenance'] = "2024-11-15"
+
+                    # Resolve vendor_id: accept UUIDs (verify existence) or vendor names (lookup/create)
+                    vendor_input = (row.get('vendor_id') or '').strip()
+                    resolved_vendor_id: Optional[str] = None
+                    if vendor_input:
+                        # Try UUID format first
+                        try:
+                            uuid_obj = uuid.UUID(vendor_input)
+                            # Verify vendor exists
+                            vendor_resp = await client.get(
+                                f"{SUPABASE_URL}/rest/v1/vendors",
+                                headers=headers,
+                                params={"vendor_id": f"eq.{vendor_input}"}
+                            )
+                            if vendor_resp.status_code == 200 and vendor_resp.json():
+                                resolved_vendor_id = vendor_input
+                        except ValueError:
+                            # Treat as vendor name: lookup by name
+                            name = vendor_input
+                            vendor_resp = await client.get(
+                                f"{SUPABASE_URL}/rest/v1/vendors",
+                                headers=headers,
+                                params={"name": f"eq.{name}"}
+                            )
+                            if vendor_resp.status_code == 200 and vendor_resp.json():
+                                resolved_vendor_id = vendor_resp.json()[0].get('vendor_id')
+                            else:
+                                # Create vendor and return its id
+                                create_resp = await client.post(
+                                    f"{SUPABASE_URL}/rest/v1/vendors",
+                                    headers={**headers, "Prefer": "return=representation"},
+                                    json={"name": name}
+                                )
+                                if create_resp.status_code in (200, 201):
+                                    created = create_resp.json()
+                                    # Supabase returns an array when return=representation
+                                    if isinstance(created, list) and len(created) > 0:
+                                        resolved_vendor_id = created[0].get('vendor_id')
+                                    elif isinstance(created, dict):
+                                        resolved_vendor_id = created.get('vendor_id')
+
+                    # Normalize status values (map common variants)
+                    raw_status = (row.get('status') or 'active').strip()
+                    status_map = {
+                        'maintenance': 'needs_maintenance',
+                        'needs_maintenance': 'needs_maintenance',
+                        'active': 'active',
+                        'critical': 'critical',
+                        'retired': 'retired'
+                    }
+                    normalized_status = status_map.get(raw_status.lower(), 'active')
+
+                    asset_data = {
+                        "asset_id": asset_id,
+                        "type": row['type'].strip(),
+                        "vendor_id": resolved_vendor_id,
+                        "install_date": row.get('install_date', '').strip() or None,
+                        "location": row['location'].strip(),
+                        "gps_lat": None,
+                        "gps_lng": None,
+                        "warranty_period": int(row['warranty_period']) if row.get('warranty_period', '').strip() else None,
+                        "health_score": int(row.get('health_score', 85)),
+                        "predicted_rul": None,
+                        "status": normalized_status,
+                        "qr_code": qr_code,
+                        "metadata": metadata,
+                        "created_at": current_time,
+                        "updated_at": current_time
+                    }
+                    
+                    # Insert into Supabase
+                    response = await client.post(
+                        f"{SUPABASE_URL}/rest/v1/assets",
+                        headers=headers,
+                        json=asset_data
+                    )
+                    
+                    if response.status_code == 201:
+                        successful_imports.append({
+                            'asset_id': asset_id,
+                            'type': asset_data['type'],
+                            'location': asset_data['location'],
+                            'row': row_number
+                        })
+                    else:
+                        failed_imports.append({
+                            'row': row_number,
+                            'error': f'Database error: {response.text}',
+                            'data': row
+                        })
+                        
+                except ValueError as ve:
+                    failed_imports.append({
+                        'row': row_number,
+                        'error': f'Invalid data format: {str(ve)}',
+                        'data': row
+                    })
+                except Exception as e:
+                    failed_imports.append({
+                        'row': row_number,
+                        'error': f'Processing error: {str(e)}',
+                        'data': row
+                    })
+        
+        return {
+            'total_processed': row_number - 1,  # Subtract 1 for header row
+            'successful_imports': len(successful_imports),
+            'failed_imports': len(failed_imports),
+            'successful_assets': successful_imports,
+            'errors': failed_imports
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Bulk import failed: {str(e)}"
         )

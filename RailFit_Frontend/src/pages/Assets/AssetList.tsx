@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import QRCodeDisplay from '@/components/QRCodeDisplay'
+import BulkImportModal from '@/components/BulkImportModal'
 import {
     Search,
     Plus,
@@ -691,6 +692,7 @@ export default function AssetList() {
     const [showAddAssetModal, setShowAddAssetModal] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
     const [showAssetDetail, setShowAssetDetail] = useState(false)
+    const [showBulkImportModal, setShowBulkImportModal] = useState(false)
 
     // Check for URL parameter to auto-open add asset modal
     useEffect(() => {
@@ -900,7 +902,10 @@ export default function AssetList() {
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Asset
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                        variant="outline"
+                        onClick={() => setShowBulkImportModal(true)}
+                    >
                         <Upload className="h-4 w-4 mr-2" />
                         Bulk Import
                     </Button>
@@ -1187,6 +1192,16 @@ export default function AssetList() {
                 isOpen={showAddAssetModal}
                 onClose={() => setShowAddAssetModal(false)}
                 onAssetAdded={handleAddAsset}
+            />
+
+            {/* Bulk Import Modal */}
+            <BulkImportModal
+                isOpen={showBulkImportModal}
+                onClose={() => setShowBulkImportModal(false)}
+                onSuccess={() => {
+                    // Refresh assets list after successful import
+                    fetchAssets()
+                }}
             />
 
             {/* Asset Detail Modal */}

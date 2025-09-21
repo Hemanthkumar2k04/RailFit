@@ -17,17 +17,10 @@ interface QRCodeData {
   location: string;
   status: string;
   health_score?: number;
-  install_date?: string;
-  vendor_id?: string;
-  warranty_period?: number;
-  predicted_rul?: number;
-  last_maintenance?: string;
-  next_maintenance?: string;
-  serial_number?: string;
-  model?: string;
-  manufacturer?: string;
-  created_at: string;
-  qr_generated_at: string;
+  predicted_rul_days: number;
+  last_inspection: string;
+  next_maintenance: string;
+  qr_version: string;
 }
 
 export default function QRCodeDisplay({ 
@@ -274,19 +267,10 @@ export default function QRCodeDisplay({
                     {qrData.health_score && (
                       <div><strong>Health Score:</strong> {qrData.health_score}</div>
                     )}
-                    {qrData.install_date && (
-                      <div><strong>Install Date:</strong> {qrData.install_date}</div>
-                    )}
-                    {qrData.serial_number && (
-                      <div><strong>Serial Number:</strong> {qrData.serial_number}</div>
-                    )}
-                    {qrData.model && (
-                      <div><strong>Model:</strong> {qrData.model}</div>
-                    )}
-                    {qrData.manufacturer && (
-                      <div><strong>Manufacturer:</strong> {qrData.manufacturer}</div>
-                    )}
-                    <div><strong>Generated:</strong> {new Date(qrData.qr_generated_at).toLocaleString()}</div>
+                    <div><strong>Predicted RUL (Days):</strong> {qrData.predicted_rul_days}</div>
+                    <div><strong>Last Inspection:</strong> {qrData.last_inspection}</div>
+                    <div><strong>Next Maintenance:</strong> {qrData.next_maintenance}</div>
+                    <div><strong>QR Version:</strong> {qrData.qr_version}</div>
                   </div>
                 </div>
               )}
