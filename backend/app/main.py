@@ -20,8 +20,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router, prefix="/api")  # Results in /api/auth/*
-app.include_router(assets.router, prefix="/api")  # Results in /api/assets/*
+app.include_router(auth.router, prefix="/api/auth")  # Results in /api/auth/*
+app.include_router(assets.router, prefix="/api/assets")  # Results in /api/assets/*
 app.include_router(dashboard.router)  # Results in /api/dashboard (defined in router)
 
 @app.get("/")
@@ -40,4 +40,6 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    import os
+    port = int(os.getenv("PORT", 5000))  # Use PORT env var or default to 5000
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)

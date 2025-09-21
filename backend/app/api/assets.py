@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/assets", tags=["Assets"])
+router = APIRouter(tags=["Assets"])
 security = HTTPBearer()
 
 # Supabase configuration
@@ -60,7 +60,7 @@ async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials 
     
     return payload
 
-@router.post("/", response_model=Asset)
+@router.post("", response_model=Asset)
 async def create_asset(
     asset: AssetCreate,
     current_user: Dict[str, Any] = Depends(get_current_user_from_token)
@@ -134,7 +134,7 @@ class AssetListResponse(BaseModel):
     has_next: bool
     has_prev: bool
 
-@router.get("/", response_model=AssetListResponse)
+@router.get("", response_model=AssetListResponse)
 async def get_assets(
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
