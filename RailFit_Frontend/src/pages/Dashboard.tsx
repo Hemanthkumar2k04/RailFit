@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Plus, Package, RefreshCw, TrendingUp, Activity } from "lucide-react";
 import AddAssetModal from "@/components/AddAssetModal";
 
-
 // Utility functions
 const formatNumber = (num: number, decimals = 2): string => {
   if (num === undefined || num === null) return '0';
@@ -229,7 +228,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-gray-600">Total Assets</p>
                   <p className="text-2xl font-bold">{dashboard.totalAssets.toLocaleString()}</p>
-                  <div className="flex items-center text-sm text-green-600 mt-1">
+                  <div className="flex items-center text-sm text-emerald-600 mt-1">
                     <TrendingUp className="mr-1" />
                     <span>+127 this quarter</span>
                   </div>
@@ -246,7 +245,6 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">Operational Assets</p>
                   <p className="text-2xl font-bold text-emerald-600">{dashboard.operationalAssets.toLocaleString()}</p>
                   <div className="mt-2 space-y-1">
-                    {/* Updated progress bar color to match the green theme */}
                     <Progress value={operationalPercentage} className="h-2" />
                     <Badge variant="secondary" className="text-xs">
                       {operationalPercentage}% Active
@@ -306,7 +304,7 @@ export default function Dashboard() {
             <CardContent className="pt-0 px-6">
               <div className="space-y-6">
                 {/* Health Bar */}
-                <div className="w-full h-5 bg-gray-200 rounded-full overflow-hidden flex shadow-inner">
+                <div className="w-full h-5 bg-muted/20 rounded-full overflow-hidden flex shadow-inner">
                   <div 
                     className="h-full bg-emerald-400 transition-all duration-1000 outline"
                     style={{ width: `${(dashboard.assetDistribution.excellent / dashboard.totalAssets) * 100}%` }}
@@ -357,14 +355,14 @@ export default function Dashboard() {
             <CardContent className="pt-0">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-lg bg-gray-50 border">
+                  <div className="text-center p-4 rounded-lg bg-muted/20 border">
                     <div className="text-2xl font-bold text-emerald-500">
                       {formatNumber(dashboard.systemUptime, 2)}%
                     </div>
                     <div className="text-sm text-gray-600">System Uptime</div>
                     <Progress value={dashboard.systemUptime} className="mt-2 h-1" />
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-gray-50 border">
+                  <div className="text-center p-4 rounded-lg bg-muted/20 border">
                     <div className="text-2xl font-bold text-slate-500">
                       {formatNumber(dashboard.avgResponseTime, 1)}s
                     </div>
@@ -378,12 +376,12 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Zone Status</h4>
                   {dashboard.zones.map((zone, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border">
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
                       <span className="font-medium text-sm">{zone.name}</span>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${
-                          zone.status === 'Online' ? "bg-green-500 animate-pulse" : 
-                          zone.status === 'Offline' ? "bg-red-500" : "bg-amber-500"
+                          zone.status === 'Online' ? "bg-emerald-400 animate-pulse" : 
+                          zone.status === 'Offline' ? "bg-rose-400" : "bg-amber-400"
                         }`} />
                         <Badge 
                           variant={zone.status === 'Online' ? "secondary" : "outline"}
@@ -430,8 +428,6 @@ export default function Dashboard() {
               <Plus />
             </Button>
           </div>
-
-
         </div>
 
         {/* Add Asset Modal */}
