@@ -1,24 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from app.core.config import settings
-from app.core.database import init_db
 from app.api import auth, assets, dashboard
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    await init_db()
-    yield
-    # Shutdown
-    pass
 
 # Create FastAPI app
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
-    debug=settings.debug,
-    lifespan=lifespan
+    debug=settings.debug
 )
 
 # Add CORS middleware
