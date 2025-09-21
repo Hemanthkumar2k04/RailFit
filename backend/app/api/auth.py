@@ -25,6 +25,13 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "field_inspector"
+    department: Optional[str] = None
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -147,6 +154,87 @@ async def login_user(login_data: LoginRequest):
             "role": user["role"]
         }
     }
+
+@router.post("/register", response_model=Token)
+async def register_user(user_data: RegisterRequest):
+    """Register a new user"""
+    try:
+        # Check if user already exists
+        existing_user = await get_user_by_email(user_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Hash the password
+        from app.core.security import get_password_hash
+        hashed_password = get_password_hash(user_data.password)
+        
+        # Generate user ID
+        import uuid
+        from datetime import datetime
+        user_id = str(uuid.uuid4())
+        current_time = datetime.utcnow().isoformat() + "Z"
+        
+        # Create user in Supabase
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            user_payload = {
+                "user_id": user_id,
+                "name": user_data.name,
+                "email": user_data.email,
+                "password_hash": hashed_password,
+                "role": user_data.role,
+                "created_at": current_time,
+                "updated_at": current_time,
+                "last_active": current_time
+            }
+            
+            response = await client.post(
+                f"{SUPABASE_URL}/rest/v1/users",
+                headers=headers,
+                json=user_payload
+            )
+            
+            if response.status_code != 201:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create user"
+                )
+            
+            # Create access token
+            access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+            access_token = create_access_token(
+                data={"user_id": user_id, "email": user_data.email, "role": user_data.role},
+                expires_delta=access_token_expires
+            )
+            
+            # Return token and user info
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "expires_in": settings.jwt_access_token_expire_minutes * 60,
+                "user": {
+                    "user_id": user_id,
+                    "name": user_data.name,
+                    "email": user_data.email,
+                    "role": user_data.role
+                }
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: Dict[str, Any] = Depends(get_current_user)):

@@ -1,168 +1,12 @@
-import React, { useEffect, useState } from "react";
-import type { ReactNode, ButtonHTMLAttributes } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { AlertTriangle, Plus, Package, RefreshCw, TrendingUp, Activity } from "lucide-react";
+import AddAssetModal from "@/components/AddAssetModal";
 
-// Mock UI components since we can't import the actual ones
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
-  className?: string;
-}
-const Card = ({ children, className = "", ...props }: CardProps) => (
-  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
-  className?: string;
-}
-const CardContent = ({ children, className = "", ...props }: CardContentProps) => (
-  <div className={`p-6 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
-  className?: string;
-}
-const CardHeader = ({ children, className = "", ...props }: CardHeaderProps) => (
-  <div className={`p-6 pb-3 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
-  children: ReactNode;
-  className?: string;
-}
-const CardTitle = ({ children, className = "", ...props }: CardTitleProps) => (
-  <h3 className={`text-lg font-semibold text-gray-900 ${className}`} {...props}>
-    {children}
-  </h3>
-);
-
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
-interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  children: ReactNode;
-  variant?: BadgeVariant;
-  className?: string;
-}
-const badgeVariants: Record<BadgeVariant, string> = {
-  default: "bg-blue-100 text-blue-800",
-  secondary: "bg-gray-100 text-gray-800",
-  destructive: "bg-red-100 text-red-800",
-  outline: "border border-gray-200 text-gray-700"
-};
-const Badge = ({ children, variant = "default", className = "", ...props }: BadgeProps) => {
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeVariants[variant]} ${className}`} {...props}>
-      {children}
-    </span>
-  );
-};
-
-type ButtonVariant = "default" | "outline" | "ghost";
-type ButtonSize = "default" | "sm" | "icon";
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  className?: string;
-}
-const buttonVariants: Record<ButtonVariant, string> = {
-  default: "bg-black text-white hover:bg-gray-800",
-  outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
-  ghost: "text-gray-700 hover:bg-gray-100"
-};
-const buttonSizes: Record<ButtonSize, string> = {
-  default: "px-4 py-2 h-9",
-  sm: "px-3 py-1.5 h-8 text-sm",
-  icon: "w-9 h-9"
-};
-const Button = ({ children, variant = "default", size = "default", className = "", disabled = false, ...props }: ButtonProps) => {
-  return (
-    <button 
-      className={`inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ${buttonVariants[variant]} ${buttonSizes[size]} ${className}`}
-      disabled={disabled}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Progress = ({ value = 0, className = "", barColor = "bg-blue-600", ...props }) => {
-  const clampedValue = Math.min(100, Math.max(0, value));
-  
-  return (
-    <div className={`w-full bg-gray-200 rounded-full h-2 overflow-hidden ${className}`} {...props}>
-      <div 
-        className={`h-full ${barColor} transition-all duration-300 ease-out rounded-full`}
-        style={{ width: `${clampedValue}%` }}
-      />
-    </div>
-  );
-};
-
-// Icons as simple components
-const RefreshIcon = ({ className = "", ...props }) => (
-  <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>
-);
-
-const TrendingUpIcon = ({ className = "" }) => (
-  <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-  </svg>
-);
-
-const AlertTriangleIcon = ({ className = "" }) => (
-  <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-  </svg>
-);
-
-const ActivityIcon = ({ className = "" }) => (
-  <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
-
-const PackageIcon = ({ className = "" }) => (
-  <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-  </svg>
-);
-
-const PlusIcon = ({ className = "" }) => (
-  <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-  </svg>
-);
-
-// Mock Modal Component
-interface AddAssetModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAssetAdded?: (asset: any) => void;
-}
-const AddAssetModal = ({ isOpen, onClose, onAssetAdded }: AddAssetModalProps) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Add New Asset</h2>
-        <p className="text-gray-600 mb-4">Asset creation form would go here.</p>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => { onAssetAdded?.({}); onClose(); }}>Add Asset</Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Utility functions
 const formatNumber = (num: number, decimals = 2): string => {
@@ -191,23 +35,47 @@ type DashboardData = {
   zones: { name: string; status: string }[];
 };
 
+// Asset interface for API response
+interface Asset {
+  asset_id: string;
+  type: string;
+  location: string;
+  health_score?: number;
+  status: string;
+  install_date?: string;
+  vendor_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AssetListResponse {
+  assets: Asset[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
 export default function Dashboard() {
-  const [dashboard] = useState<DashboardData>({
-    totalAssets: 1247,
-    operationalAssets: 1185,
-    maintenanceQueue: 45,
-    criticalAlerts: 17,
+  const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState<DashboardData>({
+    totalAssets: 0,
+    operationalAssets: 0,
+    maintenanceQueue: 0,
+    criticalAlerts: 0,
     assetDistribution: {
-      excellent: 712,
-      good: 385,
-      fair: 133,
-      critical: 17
+      excellent: 0,
+      good: 0,
+      fair: 0,
+      critical: 0
     },
     systemUptime: 99.201,
     avgResponseTime: 1.3,
     zones: [
       { name: "Northern Railways", status: "Online" },
-      { name: "Sourthern Railways", status: "Online" },
+      { name: "Southern Railways", status: "Online" },
       { name: "Eastern Railways", status: "Maintenance" },
       { name: "Western Railways", status: "Online" }
     ]
@@ -218,16 +86,102 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
+  const calculateMetricsFromAssets = (assets: Asset[]): Partial<DashboardData> => {
+    console.log('Dashboard: Calculating metrics for', assets.length, 'assets');
+    console.log('Dashboard: Assets received for calculation:', assets);
+    
+    const totalAssets = assets.length;
+    
+    // Count operational assets (active status)
+    const operationalAssets = assets.filter(asset => 
+      asset.status === 'active'
+    ).length;
+    
+    // Count assets needing maintenance
+    const maintenanceQueue = assets.filter(asset => 
+      asset.status === 'needs_maintenance' || asset.status === 'under_repair'
+    ).length;
+    
+    // Count critical alerts (assets with health score < 30 or critical status)
+    const criticalAlerts = assets.filter(asset => 
+      (asset.health_score && asset.health_score < 30) || 
+      asset.status === 'decommissioned'
+    ).length;
+    
+    // Calculate asset distribution based on health scores
+    const assetDistribution = {
+      excellent: assets.filter(asset => asset.health_score && asset.health_score >= 85).length,
+      good: assets.filter(asset => asset.health_score && asset.health_score >= 70 && asset.health_score < 85).length,
+      fair: assets.filter(asset => asset.health_score && asset.health_score >= 50 && asset.health_score < 70).length,
+      critical: assets.filter(asset => !asset.health_score || asset.health_score < 50).length
+    };
+    
+    const result = {
+      totalAssets,
+      operationalAssets,
+      maintenanceQueue,
+      criticalAlerts,
+      assetDistribution
+    };
+    
+    console.log('Dashboard: Calculated metrics result:', result);
+    return result;
+  };
+
   const fetchDashboardData = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      const token = localStorage.getItem('jwt_token');
+      console.log('Dashboard: JWT token found:', !!token);
+      
+      if (!token) {
+        console.warn('Dashboard: No authentication token found');
+        setIsRefreshing(false);
+        return;
+      }
+
+      console.log('Dashboard: Fetching assets from API...');
+      // Fetch all assets with maximum allowed limit to get complete data for metrics
+      const response = await fetch('http://localhost:5000/api/assets?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Dashboard: API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Dashboard: API error response:', errorText);
+        throw new Error(`Failed to fetch assets: ${response.status} ${response.statusText}`);
+      }
+
+      const data: AssetListResponse = await response.json();
+      console.log('Dashboard: Assets received:', data.total, 'assets');
+      console.log('Dashboard: Assets data:', data);
+      
+      const calculatedMetrics = calculateMetricsFromAssets(data.assets);
+      console.log('Dashboard: Calculated metrics:', calculatedMetrics);
+      
+      setDashboard(prev => ({
+        ...prev,
+        ...calculatedMetrics
+      }));
+      
       setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Dashboard: Error fetching dashboard data:', error);
+    } finally {
       setIsRefreshing(false);
-    }, 1000);
+    }
   };
 
   useEffect(() => {
+    // Load initial data
+    fetchDashboardData();
+    
     // Auto-refresh dashboard every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
@@ -261,22 +215,22 @@ export default function Dashboard() {
               disabled={isRefreshing}
               className="flex items-center gap-2"
             >
-              <RefreshIcon className={isRefreshing ? 'animate-spin' : ''} />
+              <RefreshCw className={isRefreshing ? 'animate-spin' : ''} />
               Refresh
             </Button>
           </div>
         </div>
 
         {/* Main Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          <Card className="h-fit">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Assets</p>
                   <p className="text-2xl font-bold">{dashboard.totalAssets.toLocaleString()}</p>
                   <div className="flex items-center text-sm text-green-600 mt-1">
-                    <TrendingUpIcon className="mr-1" />
+                    <TrendingUp className="mr-1" />
                     <span>+127 this quarter</span>
                   </div>
                 </div>
@@ -285,7 +239,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-emerald-400">
+          <Card className="border-l-4 border-l-emerald-400 h-fit">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -293,7 +247,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-emerald-600">{dashboard.operationalAssets.toLocaleString()}</p>
                   <div className="mt-2 space-y-1">
                     {/* Updated progress bar color to match the green theme */}
-                    <Progress value={operationalPercentage} className="h-2" barColor="bg-emerald-400" />
+                    <Progress value={operationalPercentage} className="h-2" />
                     <Badge variant="secondary" className="text-xs">
                       {operationalPercentage}% Active
                     </Badge>
@@ -304,25 +258,25 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-amber-400">
+          <Card className="border-l-4 border-l-amber-400 h-fit">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-600">Maintenance Queue</p>
                   <p className="text-2xl font-bold text-amber-600">{dashboard.maintenanceQueue}</p>
                   <div className="mt-2 space-y-1">
-                    <Progress value={maintenancePercentage} className="h-2" barColor="bg-amber-600" />
+                    <Progress value={maintenancePercentage} className="h-2" />
                     <Badge variant="outline" className="text-xs">
                       {maintenancePercentage}% of fleet
                     </Badge>
                   </div>
                 </div>
-                <AlertTriangleIcon className="text-amber-500 ml-2" />
+                <AlertTriangle className="text-amber-500 ml-2" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-rose-400">
+          <Card className="border-l-4 border-l-rose-400 h-fit">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -340,21 +294,21 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Asset Health Distribution */}
-          <Card>
+          <Card className="h-fit">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ActivityIcon />
+                <Activity />
                 Asset Health Distribution
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-4">
+            <CardContent className="pt-0 px-6">
+              <div className="space-y-6">
                 {/* Health Bar */}
-                <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                <div className="w-full h-5 bg-gray-200 rounded-full overflow-hidden flex shadow-inner">
                   <div 
-                    className="h-full bg-emerald-400 transition-all duration-1000"
+                    className="h-full bg-emerald-400 transition-all duration-1000 outline"
                     style={{ width: `${(dashboard.assetDistribution.excellent / dashboard.totalAssets) * 100}%` }}
                   />
                   <div 
@@ -379,12 +333,12 @@ export default function Dashboard() {
                     { label: 'Fair', value: dashboard.assetDistribution.fair, color: 'bg-amber-400' },
                     { label: 'Critical', value: dashboard.assetDistribution.critical, color: 'bg-rose-400' }
                   ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 ${item.color} rounded`} />
-                        <span className="text-sm font-medium">{item.label}</span>
+                    <div key={item.label} className="flex items-center justify-between py-2 border-b border-gray-400">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 ${item.color} rounded shadow-sm`} />
+                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{item.value}</span>
+                      <span className="text-sm font-semibold text-gray-600">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -393,10 +347,10 @@ export default function Dashboard() {
           </Card>
 
           {/* System Monitoring */}
-          <Card>
+          <Card className="h-fit">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ActivityIcon />
+                <Activity />
                 System Monitoring
               </CardTitle>
             </CardHeader>
@@ -408,7 +362,7 @@ export default function Dashboard() {
                       {formatNumber(dashboard.systemUptime, 2)}%
                     </div>
                     <div className="text-sm text-gray-600">System Uptime</div>
-                    <Progress value={dashboard.systemUptime} className="mt-2 h-1" barColor="bg-emerald-500" />
+                    <Progress value={dashboard.systemUptime} className="mt-2 h-1" />
                   </div>
                   <div className="text-center p-4 rounded-lg bg-gray-50 border">
                     <div className="text-2xl font-bold text-slate-500">
@@ -455,13 +409,13 @@ export default function Dashboard() {
             }`}>
               <Button
                 onClick={() => {
-                  setShowAddAssetModal(true);
                   setIsOpen(false);
+                  navigate('/assets?addAsset=true');
                 }}
                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 shadow-lg border mb-3 rounded-full"
                 variant="outline"
               >
-                <PackageIcon />
+                <Package />
                 Add Asset
               </Button>
             </div>
@@ -473,17 +427,11 @@ export default function Dashboard() {
                 isOpen ? 'rotate-45' : 'rotate-0'
               } hover:scale-110`}
             >
-              <PlusIcon />
+              <Plus />
             </Button>
           </div>
 
-          {/* Backdrop */}
-          {isOpen && (
-            <div 
-              className="fixed inset-0 bg-black bg-opacity-20 -z-10"
-              onClick={() => setIsOpen(false)}
-            />
-          )}
+
         </div>
 
         {/* Add Asset Modal */}

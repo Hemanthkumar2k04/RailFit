@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import QRCodeDisplay from '@/components/QRCodeDisplay'
 import {
     Search,
     Plus,
@@ -227,7 +229,7 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-xl font-semibold">Add New Asset</h2>
@@ -666,6 +668,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
 }
 
 export default function AssetList() {
+    const [searchParams, setSearchParams] = useSearchParams()
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAssets, setSelectedAssets] = useState<string[]>([])
@@ -688,6 +691,17 @@ export default function AssetList() {
     const [showAddAssetModal, setShowAddAssetModal] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
     const [showAssetDetail, setShowAssetDetail] = useState(false)
+
+    // Check for URL parameter to auto-open add asset modal
+    useEffect(() => {
+        const addAssetParam = searchParams.get('addAsset')
+        if (addAssetParam === 'true') {
+            setShowAddAssetModal(true)
+            // Remove the parameter from URL to keep it clean
+            searchParams.delete('addAsset')
+            setSearchParams(searchParams, { replace: true })
+        }
+    }, [searchParams, setSearchParams])
 
     // Utility function to check authentication and handle redirects
     const checkAuthentication = () => {
@@ -1054,9 +1068,11 @@ export default function AssetList() {
                                                         <Eye className="h-4 w-4 mr-1" />
                                                         View
                                                     </Button>
-                                                    <Button size="sm" variant="outline">
-                                                        <QrCode className="h-4 w-4" />
-                                                    </Button>
+                                                    <QRCodeDisplay 
+                                                        assetId={asset.asset_id}
+                                                        assetType={asset.type}
+                                                        showControls={true}
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>
@@ -1106,9 +1122,11 @@ export default function AssetList() {
                                                 <Eye className="h-4 w-4 mr-1" />
                                                 View
                                             </Button>
-                                            <Button size="sm" variant="outline">
-                                                <QrCode className="h-4 w-4" />
-                                            </Button>
+                                            <QRCodeDisplay 
+                                                assetId={asset.asset_id}
+                                                assetType={asset.type}
+                                                showControls={true}
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>

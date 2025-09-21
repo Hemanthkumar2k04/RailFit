@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import Response
 from typing import List, Optional, Dict, Any
 from app.core.security import verify_token
 import httpx
 import uuid
+import json
+import qrcode
+import io
+import base64
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -270,4 +275,116 @@ async def get_asset(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve asset: {str(e)}"
+        )
+
+@router.get("/{asset_id}/qr")
+async def generate_asset_qr_code(
+    asset_id: str,
+    format: str = Query("png", description="Output format: png, svg, or json"),
+    current_user: Dict[str, Any] = Depends(get_current_user_from_token)
+):
+    """Generate QR code for an asset with full asset details"""
+    try:
+        # First, get the asset details
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/assets",
+                headers=headers,
+                params={"asset_id": f"eq.{asset_id}"}
+            )
+            
+            if response.status_code == 200:
+                assets = response.json()
+                if assets:
+                    asset = assets[0]
+                    
+                    # Create comprehensive QR code data (Option 3)
+                    qr_data = {
+                        "asset_id": asset.get("asset_id"),
+                        "type": asset.get("type"),
+                        "location": asset.get("location"),
+                        "status": asset.get("status"),
+                        "health_score": asset.get("health_score"),
+                        "install_date": asset.get("install_date"),
+                        "vendor_id": asset.get("vendor_id"),
+                        "warranty_period": asset.get("warranty_period"),
+                        "predicted_rul": asset.get("predicted_rul"),
+                        "last_maintenance": asset.get("metadata", {}).get("last_maintenance") if asset.get("metadata") else None,
+                        "next_maintenance": asset.get("metadata", {}).get("next_maintenance") if asset.get("metadata") else None,
+                        "serial_number": asset.get("metadata", {}).get("serial_number") if asset.get("metadata") else None,
+                        "model": asset.get("metadata", {}).get("model") if asset.get("metadata") else None,
+                        "manufacturer": asset.get("metadata", {}).get("manufacturer") if asset.get("metadata") else None,
+                        "created_at": asset.get("created_at"),
+                        "qr_generated_at": datetime.now().isoformat()
+                    }
+                    
+                    # Remove None values to keep QR code clean
+                    qr_data = {k: v for k, v in qr_data.items() if v is not None}
+                    
+                    if format.lower() == "json":
+                        # Return raw JSON data
+                        return qr_data
+                    
+                    # Generate QR code
+                    qr_json = json.dumps(qr_data, indent=None, separators=(',', ':'))
+                    
+                    # Create QR code instance
+                    qr = qrcode.QRCode(
+                        version=1,
+                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        box_size=10,
+                        border=4,
+                    )
+                    
+                    qr.add_data(qr_json)
+                    qr.make(fit=True)
+                    
+                    if format.lower() == "svg":
+                        # Generate SVG
+                        from qrcode.image.svg import SvgPathImage
+                        img = qr.make_image(image_factory=SvgPathImage)
+                        svg_buffer = io.BytesIO()
+                        img.save(svg_buffer)
+                        svg_content = svg_buffer.getvalue().decode('utf-8')
+                        
+                        return Response(
+                            content=svg_content,
+                            media_type="image/svg+xml",
+                            headers={"Content-Disposition": f"inline; filename=asset_{asset_id}_qr.svg"}
+                        )
+                    else:
+                        # Generate PNG (default)
+                        img = qr.make_image(fill_color="black", back_color="white")
+                        img_buffer = io.BytesIO()
+                        img.save(img_buffer, format='PNG')
+                        img_buffer.seek(0)
+                        
+                        return Response(
+                            content=img_buffer.getvalue(),
+                            media_type="image/png",
+                            headers={"Content-Disposition": f"inline; filename=asset_{asset_id}_qr.png"}
+                        )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Asset not found"
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve asset for QR generation"
+                )
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate QR code: {str(e)}"
         )

@@ -108,21 +108,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const register = async (userData: RegisterData): Promise<boolean> => {
         try {
-            // Mock registration - replace with real API call
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            const response = await fetch('http://localhost:5000/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                console.error('Registration failed:', errorData)
+                return false
+            }
+
+            const data = await response.json()
+            
+            // Store JWT token and user data
+            localStorage.setItem('jwt_token', data.access_token)
+            localStorage.setItem('isAuthenticated', 'true')
+            localStorage.setItem('user', JSON.stringify(data.user))
 
             const newUser: User = {
-                id: Date.now().toString(),
-                email: userData.email,
-                role: userData.role,
-                name: userData.name,
+                id: data.user.user_id,
+                email: data.user.email,
+                role: data.user.role,
+                name: data.user.name,
                 department: userData.department
             }
 
             setUser(newUser)
             setIsAuthenticated(true)
-            localStorage.setItem('isAuthenticated', 'true')
-            localStorage.setItem('user', JSON.stringify(newUser))
 
             return true
         } catch (error) {
