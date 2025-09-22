@@ -356,11 +356,11 @@ export default function InspectionsPage() {
             className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-6"
           >
             <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900">{inspection.inspection_id}</h3>
-                <p className="text-sm text-gray-600">{inspection.asset_id}</p>
+              <div className="flex-1 min-w-0 mr-4">
+                <h3 className="font-semibold text-lg text-gray-900 truncate" title={inspection.inspection_id}>{inspection.inspection_id}</h3>
+                <p className="text-sm text-gray-600 truncate" title={inspection.asset_id}>{inspection.asset_id}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+              <span className={`text-right px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
                 resultStyles[inspection.result as keyof typeof resultStyles] || 'bg-gray-100 text-gray-800'
               }`}>
                 {resultIcons[inspection.result as keyof typeof resultIcons]}
@@ -416,7 +416,7 @@ export default function InspectionsPage() {
 
       {/* Create Inspection Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-block bg-opacity-25 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">New Inspection</h2>

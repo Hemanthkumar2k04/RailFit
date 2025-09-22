@@ -1082,7 +1082,7 @@ export default function AssetList() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-emerald-600">
-                            {metrics?.installedAssets ?? safeAssets.filter(a => a.status === 'active').length}
+                            {(metrics?.totalAssets ?? pagination.total) - (metrics?.maintenanceQueue ?? safeAssets.filter(a => a.status === 'under_maintenance').length)}
                         </div>
                         <p className="text-xs text-emerald-600 mt-1">Operational status</p>
                     </CardContent>
