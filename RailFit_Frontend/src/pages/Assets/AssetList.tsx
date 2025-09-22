@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import QRCodeDisplay from '@/components/QRCodeDisplay'
 import BulkImportModal from '@/components/BulkImportModal'
+import { apiCall, API_ENDPOINTS } from '@/config/api'
 import {
     Search,
     Plus,
@@ -64,6 +65,32 @@ const assetTypeOptions = [
         { value: 'ok', label: 'OK' },
         { value: 'critical', label: 'Critical' }
     ]// Types for API response
+
+// Metadata structure stored in the database as JSON
+interface AssetMetadata {
+    model?: string
+    description?: string
+    manufacturer?: string
+    serial_number?: string
+    last_inspection?: string
+    next_maintenance?: string
+    [key: string]: any // Allow additional metadata fields
+}
+
+// Vendor information from vendors table
+interface Vendor {
+    id: string
+    name: string
+    contact_email?: string
+    contact_phone?: string
+    address?: string
+    warranty_terms?: string
+    is_active: boolean
+    created_at: string
+    updated_at: string
+}
+
+// Asset structure from database
 interface Asset {
     asset_id: string
     type: string
@@ -76,6 +103,9 @@ interface Asset {
     created_at: string
     updated_at: string
     qr_code?: string
+    // Metadata JSON field from database
+    metadata?: AssetMetadata
+    // Legacy direct fields (for backward compatibility)
     description?: string
     serial_number?: string
     model?: string
@@ -186,12 +216,8 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
                 technical_specs: formData.technical_specs || null
             }
 
-            const response = await fetch('http://localhost:5000/api/assets/', {
+            const response = await apiCall(API_ENDPOINTS.ASSETS.BASE, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(payload)
             })
 
@@ -424,12 +450,111 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
     )
 }
 
-// Asset Detail Modal Component
+/**
+ * Asset Detail Modal Component
+ * 
+ * DATA STRUCTURE OVERVIEW:
+ * ========================
+ * 
+ * 1. ASSET DATA (from database 'assets' table):
+ *    - asset_id: Unique identifier (UUID)
+ *    - type: Rail component type (Elastic Rail Clip, Rail Pad, etc.)
+ *    - location: Physical location of the asset
+ *    - vendor_id: Foreign key to vendors table (UUID)
+ *    - status: active, under_maintenance, retired, not_installed
+ *    - condition: excellent, good, ok, critical
+ *    - health_score: Numeric score (0-100)
+ *    - install_date: Installation date
+ *    - metadata: JSON object containing:
+ *      {
+ *        "model": "Workshop-Pro",
+ *        "description": "Workshop rail pad for maintenance operations",
+ *        "manufacturer": "PadTech", 
+ *        "serial_number": "RP-008",
+ *        "last_inspection": "2024-08-15",
+ *        "next_maintenance": "2024-11-15"
+ *        // ... other custom fields
+ *      }
+ * 
+ * 2. VENDOR DATA (from database 'vendors' table, fetched separately):
+ *    - id: Primary key (UUID) - matches asset.vendor_id
+ *    - name: Vendor company name
+ *    - contact_email: Vendor email
+ *    - contact_phone: Vendor phone
+ *    - address: Vendor address
+ *    - warranty_terms: Warranty information
+ *    - is_active: Boolean status
+ * 
+ * 3. API ENDPOINTS USED:
+ *    - GET /api/assets - Returns asset data with metadata JSON
+ *    - GET /api/vendors/{vendor_id} - Returns vendor details
+ */
 function AssetDetailModal({ asset, isOpen, onClose }: {
     asset: Asset | null
     isOpen: boolean
     onClose: () => void
 }) {
+    const [vendor, setVendor] = useState<Vendor | null>(null)
+    const [vendorLoading, setVendorLoading] = useState(false)
+    const [vendorError, setVendorError] = useState<string | null>(null)
+
+    // Fetch vendor details when modal opens
+    useEffect(() => {
+        const fetchVendorDetails = async () => {
+            if (!asset?.vendor_id) {
+                setVendor(null)
+                setVendorError(null)
+                return
+            }
+
+            setVendorLoading(true)
+            setVendorError(null)
+            
+            try {
+                const response = await apiCall(API_ENDPOINTS.VENDORS.BY_ID(asset.vendor_id))
+                
+                if (response.ok) {
+                    const vendorData = await response.json()
+                    setVendor(vendorData)
+                } else {
+                    const errorText = await response.text()
+                    console.error('Failed to fetch vendor details:', response.status, errorText)
+                    setVendorError(`Failed to load vendor details (${response.status})`)
+                    setVendor(null)
+                }
+            } catch (error) {
+                console.error('Error fetching vendor details:', error)
+                setVendorError('Network error while loading vendor details')
+                setVendor(null)
+            } finally {
+                setVendorLoading(false)
+            }
+        }
+
+        if (isOpen && asset) {
+            fetchVendorDetails()
+        } else {
+            // Reset states when modal is closed
+            setVendor(null)
+            setVendorError(null)
+            setVendorLoading(false)
+        }
+    }, [asset, isOpen])
+
+    // Helper function to safely get metadata or fallback values
+    const getMetadataField = (key: string, fallbackProperty?: keyof Asset): string => {
+        // First try to get from metadata object
+        const metadataValue = asset?.metadata?.[key]
+        if (metadataValue) return String(metadataValue)
+        
+        // Then try fallback property on asset object (for backward compatibility)
+        if (fallbackProperty && asset?.[fallbackProperty]) {
+            return String(asset[fallbackProperty])
+        }
+        
+        return 'N/A'
+    }
+
     if (!isOpen || !asset) return null
 
     const getHealthStatus = (healthScore?: number): string => {
@@ -490,10 +615,6 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Type</span>
-                                    <p className="font-semibold">{asset.type}</p>
-                                </div>
-                                <div>
                                     <span className="text-sm font-medium text-gray-500">Location</span>
                                     <div className="flex items-center gap-2">
                                         <MapPin className="h-4 w-4 text-gray-400" />
@@ -507,6 +628,10 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                             {asset.status.charAt(0).toUpperCase() + asset.status.slice(1).replace('_', ' ')}
                                         </Badge>
                                     </div>
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-gray-500">Install Date</span>
+                                    <p className="font-semibold">{formatDate(asset.install_date)}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -551,21 +676,21 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <Building className="h-5 w-5" />
-                                    Asset Details
+                                    Asset Identification
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Serial Number</span>
-                                    <p className="font-mono text-sm">{asset.serial_number || 'N/A'}</p>
+                                    <span className="text-sm font-medium text-gray-500">Asset ID</span>
+                                    <p className="font-mono text-sm">{asset.asset_id}</p>
                                 </div>
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Model</span>
-                                    <p className="font-semibold">{asset.model || 'N/A'}</p>
+                                    <span className="text-sm font-medium text-gray-500">Type</span>
+                                    <p className="font-semibold">{asset.type}</p>
                                 </div>
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Manufacturer</span>
-                                    <p className="font-semibold">{asset.manufacturer || 'N/A'}</p>
+                                    <span className="text-sm font-medium text-gray-500">QR Code</span>
+                                    <p className="font-mono text-sm">{asset.qr_code || 'Not generated'}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -583,13 +708,21 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <span className="text-sm font-medium text-gray-500">Install Date</span>
-                                        <p className="font-semibold">{formatDate(asset.install_date)}</p>
+                                        <span className="text-sm font-medium text-gray-500">Last Inspection</span>
+                                        <p className="font-semibold">
+                                            {getMetadataField('last_inspection') !== 'N/A' ? formatDate(getMetadataField('last_inspection')) : 'N/A'}
+                                        </p>
                                     </div>
                                     <div>
-                                        <span className="text-sm font-medium text-gray-500">Created</span>
-                                        <p className="font-semibold">{formatDate(asset.created_at)}</p>
+                                        <span className="text-sm font-medium text-gray-500">Next Maintenance</span>
+                                        <p className="font-semibold">
+                                            {getMetadataField('next_maintenance') !== 'N/A' ? formatDate(getMetadataField('next_maintenance')) : 'N/A'}
+                                        </p>
                                     </div>
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-gray-500">Created Date</span>
+                                    <p className="font-semibold">{formatDate(asset.created_at)}</p>
                                 </div>
                                 <div>
                                     <span className="text-sm font-medium text-gray-500">Maintenance Schedule</span>
@@ -608,48 +741,132 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <User className="h-5 w-5" />
-                                    Vendor & Financial
+                                    Vendor & Financial Information
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Vendor Information Section */}
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Vendor ID</span>
-                                    <p className="font-mono text-sm">{asset.vendor_id || 'N/A'}</p>
+                                    <span className="text-sm font-medium text-gray-500">Vendor Details</span>
+                                    {vendorLoading ? (
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                            <span className="text-sm text-gray-500">Loading vendor information...</span>
+                                        </div>
+                                    ) : vendorError ? (
+                                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                                <span className="text-sm text-red-700">{vendorError}</span>
+                                            </div>
+                                            <p className="text-xs text-red-600 mt-1">Vendor ID: {asset.vendor_id}</p>
+                                        </div>
+                                    ) : vendor ? (
+                                        <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                                            <div className="space-y-2">
+                                                <p className="font-semibold text-green-900">{vendor.name}</p>
+                                                <div className="text-sm text-green-700 space-y-1">
+                                                    <p><span className="font-medium">ID:</span> <code className="bg-green-100 px-1 rounded text-xs">{vendor.id}</code></p>
+                                                    {vendor.contact_email && (
+                                                        <p><span className="font-medium">Email:</span> {vendor.contact_email}</p>
+                                                    )}
+                                                    {vendor.contact_phone && (
+                                                        <p><span className="font-medium">Phone:</span> {vendor.contact_phone}</p>
+                                                    )}
+                                                    {vendor.address && (
+                                                        <p><span className="font-medium">Address:</span> {vendor.address}</p>
+                                                    )}
+                                                    <p><span className="font-medium">Status:</span> 
+                                                        <Badge className={vendor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                                                            {vendor.is_active ? 'Active' : 'Inactive'}
+                                                        </Badge>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : asset.vendor_id ? (
+                                        <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                            <p className="text-sm text-gray-600">No vendor details available</p>
+                                            <p className="text-xs text-gray-500 mt-1 font-mono">Vendor ID: {asset.vendor_id}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                            <p className="text-sm text-gray-500">No vendor assigned to this asset</p>
+                                        </div>
+                                    )}
                                 </div>
+                                
+                                {/* Financial Information */}
                                 {asset.purchase_cost && (
                                     <div>
                                         <span className="text-sm font-medium text-gray-500">Purchase Cost</span>
-                                        <p className="font-semibold text-lg">{formatCurrency(asset.purchase_cost)}</p>
+                                        <p className="font-semibold text-lg text-green-600">{formatCurrency(asset.purchase_cost)}</p>
                                     </div>
                                 )}
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">QR Code</span>
-                                    <p className="font-mono text-sm">{asset.qr_code || 'Not generated'}</p>
-                                </div>
                             </CardContent>
                         </Card>
 
-                        {(asset.description || asset.technical_specs) && (
+                        {/* Asset Specifications and Details */}
+                        <Card className="lg:col-span-2">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Settings className="h-5 w-5" />
+                                    Asset Specifications
+                                </CardTitle>
+                                <p className="text-xs text-gray-500 mt-1">Detailed asset information and specifications</p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    {/* Core Asset Specifications */}
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Model</span>
+                                        <p className="font-semibold">{getMetadataField('model', 'model')}</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Serial Number</span>
+                                        <p className="font-mono text-sm">{getMetadataField('serial_number', 'serial_number')}</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Manufacturer</span>
+                                        <p className="font-semibold">{getMetadataField('manufacturer', 'manufacturer')}</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Description from Metadata */}
+                                {getMetadataField('description', 'description') !== 'N/A' && (
+                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                                        <span className="text-sm font-medium text-gray-700">Description</span>
+                                        <p className="mt-2 text-gray-800">{getMetadataField('description', 'description')}</p>
+                                    </div>
+                                )}
+                                
+                                {/* Raw Metadata Display for Development */}
+                                {asset.metadata && Object.keys(asset.metadata).length > 0 && (
+                                    <details className="mt-4">
+                                        <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
+                                            View Raw Metadata (Developer Info)
+                                        </summary>
+                                        <pre className="mt-2 text-xs text-gray-600 overflow-x-auto bg-white p-3 rounded border">
+                                            {JSON.stringify(asset.metadata, null, 2)}
+                                        </pre>
+                                    </details>
+                                )}
+                            </CardContent>
+                        </Card>
+                        
+                        {/* Technical Specifications - only if available and not in metadata */}
+                        {asset.technical_specs && (
                             <Card className="lg:col-span-2">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <FileText className="h-5 w-5" />
-                                        Additional Information
+                                        Technical Specifications
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {asset.description && (
-                                        <div>
-                                            <span className="text-sm font-medium text-gray-500">Description</span>
-                                            <p className="mt-1 text-gray-800">{asset.description}</p>
-                                        </div>
-                                    )}
-                                    {asset.technical_specs && (
-                                        <div>
-                                            <span className="text-sm font-medium text-gray-500">Technical Specifications</span>
-                                            <p className="mt-1 text-gray-800 whitespace-pre-line">{asset.technical_specs}</p>
-                                        </div>
-                                    )}
+                                <CardContent>
+                                    <p className="text-gray-800 whitespace-pre-line">{asset.technical_specs}</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -742,12 +959,7 @@ export default function AssetList() {
                 return
             }
 
-            const response = await fetch('http://localhost:5000/api/assets/metrics', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+            const response = await apiCall(API_ENDPOINTS.ASSETS.METRICS)
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch metrics: ${response.status}`)
@@ -760,7 +972,7 @@ export default function AssetList() {
         }
     }
 
-
+    
 
     const fetchAssets = async (page: number = 1, searchQuery: string = '', assetFilters: any = {}) => {
         setLoading(true)
@@ -782,13 +994,8 @@ export default function AssetList() {
             if (assetFilters.location) params.append('location', assetFilters.location)
             if (assetFilters.status) params.append('status', assetFilters.status)
             if (assetFilters.condition) params.append('condition', assetFilters.condition)
-
-            const response = await fetch(`http://localhost:5000/api/assets/?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            
+            const response = await apiCall(`${API_ENDPOINTS.ASSETS.BASE}?${params}`)
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -1236,6 +1443,7 @@ export default function AssetList() {
                                         <th className="text-left py-3 px-4 font-medium">Type</th>
                                         <th className="text-left py-3 px-4 font-medium">Location</th>
                                         <th className="text-left py-3 px-4 font-medium">Health Score</th>
+                                        <th className="text-left py-3 px-4 font-medium">Condition</th>
                                         <th className="text-left py-3 px-4 font-medium">Status</th>
                                         <th className="text-left py-3 px-4 font-medium">Install Date</th>
                                         <th className="text-left py-3 px-4 font-medium">Actions</th>
@@ -1261,8 +1469,13 @@ export default function AssetList() {
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4">
+                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
+                                                    {asset.condition ? asset.condition.charAt(0).toUpperCase() + asset.condition.slice(1) : 'N/A'}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4">
                                                 <Badge variant={asset.status === 'active' ? 'default' : 'outline'} className="text-xs">
-                                                    {getHealthStatus(asset.health_score)}
+                                                    {asset.status ? asset.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4 text-sm">{formatDate(asset.install_date)}</td>

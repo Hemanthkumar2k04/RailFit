@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import auth, assets, dashboard, inspections
+from app.api import auth, assets, dashboard, inspections, vendors, mobile
 
 # Create FastAPI app
 app = FastAPI(
@@ -23,6 +23,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth")  # Results in /api/auth/*
 app.include_router(assets.router, prefix="/api/assets")  # Results in /api/assets/*
 app.include_router(inspections.router, prefix="/api/inspections")  # Results in /api/inspections/*
+app.include_router(vendors.router, prefix="/api/vendors")  # Results in /api/vendors/*
+app.include_router(mobile.router, prefix="/api/mobile")  # Results in /api/mobile/*
 app.include_router(dashboard.router)  # Results in /api/dashboard (defined in router)
 
 @app.get("/")
