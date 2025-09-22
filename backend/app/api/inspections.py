@@ -97,11 +97,10 @@ async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials 
 async def create_inspection(
     asset_id: str = Form(...),
     location: str = Form(...),
-    inspection_type: str = Form(...),
-    notes: str = Form(''),
-    inspector_id: str = Form(...),
-    inspector_name: str = Form(...),
-    image: UploadFile = File(None)
+    inspection_type: str = Form("visual"),
+    notes: str = Form(""),
+    image: UploadFile = File(None),
+    current_user: Dict[str, Any] = Depends(get_current_user_from_token)  # Add this back
 ):
     """Create a new inspection with AI-powered defect detection"""
     try:
@@ -109,7 +108,7 @@ async def create_inspection(
         inspection_id = str(uuid.uuid4())
         current_time = datetime.utcnow().isoformat() + "Z"
         
-        # Handle missing name field
+        # Handle missing name field safely
         inspector_name = current_user.get("name") or current_user.get("email") or "Unknown Inspector"
         
         ai_prediction = None
@@ -145,7 +144,7 @@ async def create_inspection(
             "inspection_id": inspection_id,
             "asset_id": asset_id,
             "inspector_id": current_user["user_id"],
-            "inspector_name": inspector_name,  
+            "inspector_name": inspector_name,
             "location": location,
             "inspection_date": current_time,
             "inspection_type": inspection_type,
@@ -187,7 +186,7 @@ async def create_inspection(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create inspection: {str(e)}"
         )
-
+    
 @router.get("", response_model=List[Inspection])
 async def get_inspections(
     asset_id: Optional[str] = None,
