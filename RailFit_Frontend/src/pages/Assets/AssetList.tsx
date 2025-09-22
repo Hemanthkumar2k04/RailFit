@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import QRCodeDisplay from '@/components/QRCodeDisplay'
 import BulkImportModal from '@/components/BulkImportModal'
+import { apiCall, API_ENDPOINTS } from '@/config/api'
 import {
     Search,
     Plus,
@@ -186,12 +187,8 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
                 technical_specs: formData.technical_specs || null
             }
 
-            const response = await fetch('http://localhost:5000/api/assets/', {
+            const response = await apiCall(API_ENDPOINTS.ASSETS.BASE, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(payload)
             })
 
@@ -742,12 +739,7 @@ export default function AssetList() {
                 return
             }
 
-            const response = await fetch('http://localhost:5000/api/assets/metrics', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+            const response = await apiCall(API_ENDPOINTS.ASSETS.METRICS)
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch metrics: ${response.status}`)
@@ -783,12 +775,7 @@ export default function AssetList() {
             if (assetFilters.status) params.append('status', assetFilters.status)
             if (assetFilters.condition) params.append('condition', assetFilters.condition)
 
-            const response = await fetch(`http://localhost:5000/api/assets/?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            const response = await apiCall(`${API_ENDPOINTS.ASSETS.BASE}?${params}`)
 
             if (!response.ok) {
                 if (response.status === 401) {
