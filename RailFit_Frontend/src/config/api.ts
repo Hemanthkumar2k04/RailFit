@@ -20,6 +20,12 @@ export const API_ENDPOINTS = {
     QR_CODE: (assetId: string) => `${API_BASE_URL}/api/assets/${assetId}/qr`,
   },
   
+  // Vendor endpoints
+  VENDORS: {
+    BASE: `${API_BASE_URL}/api/vendors`,
+    BY_ID: (vendorId: string) => `${API_BASE_URL}/api/vendors/${vendorId}`,
+  },
+  
   // Inspection endpoints
   INSPECTIONS: {
     BASE: `${API_BASE_URL}/api/inspections`,
