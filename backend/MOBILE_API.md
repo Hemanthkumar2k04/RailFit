@@ -48,7 +48,21 @@ Process a QR code scan and return detailed asset information.
 
 **QR Data Formats Supported:**
 1. **Plain Asset ID:** `"d23e0996-33e1-443e-8943-6a4a924f177a"`
-2. **JSON Format:** `'{"id":"d23e0996-33e1-443e-8943-6a4a924f177a","type":"Rail Pad"}'`
+2. **Full JSON Format (Recommended):** 
+```json
+{
+  "asset_id": "d23e0996-33e1-443e-8943-6a4a924f177a",
+  "type": "Rail Pad",
+  "location": "Visitor Center XX-34",
+  "status": "active",
+  "health_score": 95,
+  "predicted_rul_days": 120,
+  "last_inspection": "2024-08-15",
+  "next_maintenance": "2024-11-15",
+  "qr_version": "1.0"
+}
+```
+3. **Legacy JSON Format:** `'{"id":"d23e0996-33e1-443e-8943-6a4a924f177a","type":"Rail Pad"}'`
 
 **Response:**
 ```json
@@ -59,7 +73,11 @@ Process a QR code scan and return detailed asset information.
   "status": "active",
   "condition": "excellent",
   "health_score": 95,
+  "predicted_rul_days": 120,
   "install_date": "2024-03-12",
+  "last_inspection": "2024-08-15",
+  "next_maintenance": "2024-11-15",
+  "qr_version": "1.0",
   "metadata": {
     "model": "Public-Pro",
     "description": "Visitor center rail pad with public access considerations",

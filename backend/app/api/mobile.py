@@ -27,9 +27,13 @@ class AssetResponse(BaseModel):
     status: str
     condition: str
     health_score: Optional[int] = None
+    predicted_rul_days: Optional[int] = None
     install_date: Optional[str] = None
+    last_inspection: Optional[str] = None
+    next_maintenance: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     vendor_info: Optional[Dict[str, Any]] = None
+    qr_version: Optional[str] = None
 
 async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify JWT token and return user info"""
@@ -52,26 +56,40 @@ async def process_qr_scan(
     """
     Process QR code scan from mobile app and return asset information
     
-    The QR code data can be:
-    1. Just an asset_id (UUID string)
-    2. JSON string with asset information including asset_id
+    Expected QR code JSON structure:
+    {
+        "asset_id": "d23e0996-33e1-443e-8943-6a4a924f177a",
+        "type": "Rail Pad",
+        "location": "Visitor Center XX-34", 
+        "status": "active",
+        "health_score": 95,
+        "predicted_rul_days": 120,
+        "last_inspection": "2024-08-15",
+        "next_maintenance": "2024-11-15",
+        "qr_version": "1.0"
+    }
     """
     try:
-        # Parse QR data - it could be JSON or just an asset ID
-        asset_id = None
-        
+        # Parse QR data - expecting JSON format
         try:
-            # Try to parse as JSON first
             qr_json = json.loads(scan_request.qr_data)
-            asset_id = qr_json.get('id') or qr_json.get('asset_id')
+            asset_id = qr_json.get('asset_id')
+            qr_version = qr_json.get('qr_version', 'unknown')
+            
+            # Validate QR structure
+            if not asset_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid QR code: Missing asset_id field"
+                )
+                
+            # Log QR version for analytics
+            print(f"Processing QR scan - Version: {qr_version}, Asset: {asset_id}")
+            
         except json.JSONDecodeError:
-            # If not JSON, treat as plain asset ID
-            asset_id = scan_request.qr_data.strip()
-        
-        if not asset_id:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid QR code: No asset ID found"
+                detail="Invalid QR code: Expected JSON format"
             )
 
         # Fetch asset from database
@@ -141,6 +159,9 @@ async def process_qr_scan(
             # Insert scan log (optional - you might want to create a scan_logs table)
             # await client.post(f"{SUPABASE_URL}/rest/v1/scan_logs", json=scan_log, headers=headers)
             
+            # Extract metadata fields for QR compatibility
+            metadata = asset.get("metadata", {})
+            
             # Format response
             return AssetResponse(
                 asset_id=asset.get("asset_id"),
@@ -149,9 +170,13 @@ async def process_qr_scan(
                 status=asset.get("status"),
                 condition=asset.get("condition"),
                 health_score=asset.get("health_score"),
+                predicted_rul_days=asset.get("predicted_rul_days"),
                 install_date=asset.get("install_date"),
-                metadata=asset.get("metadata"),
-                vendor_info=vendor_info
+                last_inspection=metadata.get("last_inspection"),
+                next_maintenance=metadata.get("next_maintenance"),
+                metadata=metadata,
+                vendor_info=vendor_info,
+                qr_version=qr_version
             )
             
     except HTTPException:
@@ -225,6 +250,9 @@ async def get_asset_by_id(
                             "warranty_terms": vendor.get("warranty_terms")
                         }
             
+            # Extract metadata fields for QR compatibility
+            metadata = asset.get("metadata", {})
+            
             # Format response
             return AssetResponse(
                 asset_id=asset.get("asset_id"),
@@ -233,9 +261,13 @@ async def get_asset_by_id(
                 status=asset.get("status"),
                 condition=asset.get("condition"),
                 health_score=asset.get("health_score"),
+                predicted_rul_days=asset.get("predicted_rul_days"),
                 install_date=asset.get("install_date"),
-                metadata=asset.get("metadata"),
-                vendor_info=vendor_info
+                last_inspection=metadata.get("last_inspection"),
+                next_maintenance=metadata.get("next_maintenance"),
+                metadata=metadata,
+                vendor_info=vendor_info,
+                qr_version="1.0"
             )
             
     except HTTPException:
