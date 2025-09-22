@@ -8,8 +8,10 @@ import base64
 import io
 from datetime import datetime
 from pydantic import BaseModel
+import tensorflow as tf
 import numpy as np
 from PIL import Image
+import os
 
 router = APIRouter(tags=["Inspections"])
 security = HTTPBearer()
@@ -18,65 +20,100 @@ security = HTTPBearer()
 SUPABASE_URL = "https://nlxrpnjccouogrfbbgmk.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5seHJwbmpjY291b2dyZmJiZ21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzM2NjQsImV4cCI6MjA3Mzk0OTY2NH0.begglCbsqiTX7Sop_09BpTRHw31NGm9nThoTkk4aEJE"
 
-# Load your trained model (initialize once when server starts)
-# model = tf.keras.models.load_model('/path/to/your/railfit_model.h5')
+# Load your trained model
+model = None
+model_loaded = False
 
-# For now, we'll simulate the model prediction
+def load_model():
+    global model, model_loaded
+    try:
+        # Get the absolute path to your model
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.join(current_dir, '..', '..', '..')
+        model_path = os.path.join(project_root, 'ML_model', 'rail_defect_model.keras')
+        model_path = os.path.abspath(model_path)
+        
+        print(f"🔍 Looking for model at: {model_path}")
+        print(f"🔍 Path exists: {os.path.exists(model_path)}")
+        
+        if os.path.exists(model_path):
+            print("📦 Loading TensorFlow model...")
+            model = tf.keras.models.load_model(model_path)
+            model_loaded = True
+            print(f"✅ Model loaded successfully!")
+            print(f"📊 Model input shape: {model.input_shape}")
+        else:
+            print(f"❌ Model file not found at: {model_path}")
+            print(f"📁 Directory contents: {os.listdir(os.path.dirname(model_path)) if os.path.exists(os.path.dirname(model_path)) else 'Directory does not exist'}")
+            
+    except Exception as e:
+        print(f"❌ Failed to load model: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        model_loaded = False
+
+# Load model when module is imported
+load_model()
+
 def predict_defect(image_data: bytes) -> dict:
     """
-    Simulate your MobileNetV2 model prediction
-    Replace this with actual model inference
+    Use your trained MobileNetV2 model for defect detection
     """
     try:
         # Convert bytes to PIL Image
         image = Image.open(io.BytesIO(image_data))
+        
+        # Convert to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Resize to model input size (224, 224)
         image = image.resize((224, 224))
         
-        # Convert to numpy array and normalize
-        img_array = np.array(image) / 255.0
+        # Convert to numpy array and normalize (0-1 range)
+        img_array = np.array(image, dtype=np.float32) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
         
-        # Simulate model prediction (replace with actual model.predict())
-        # pred = model.predict(img_array)
-        # For demo, we'll simulate random prediction
-        import random
-        confidence = random.uniform(0.1, 0.95)
-        is_defective = confidence > 0.5
-        
-        return {
-            "prediction": "Defective" if is_defective else "Non-Defective",
-            "confidence": float(confidence),
-            "defect_probability": float(confidence if is_defective else 1 - confidence)
-        }
+        if model_loaded and model is not None:
+            # Use your actual trained model
+            prediction = model.predict(img_array, verbose=0)
+            confidence = float(prediction[0][0])
+            
+            # Based on your training, >0.5 means defective
+            is_defective = confidence > 0.5
+            
+            result = {
+                "prediction": "Defective" if is_defective else "Non-Defective",
+                "confidence": confidence,
+                "defect_probability": confidence if is_defective else 1 - confidence,
+                "model_version": "MobileNetV2_RailFIT_v1.0",
+                "model_loaded": True
+            }
+            
+            print(f"🔍 AI Analysis: {result['prediction']} (confidence: {confidence:.3f})")
+            return result
+        else:
+            # Fallback simulation mode
+            import random
+            confidence = random.uniform(0.6, 0.95)
+            is_defective = random.choice([True, False])
+            
+            return {
+                "prediction": "Defective" if is_defective else "Non-Defective", 
+                "confidence": confidence,
+                "defect_probability": confidence if is_defective else 1 - confidence,
+                "model_version": "Simulation_Mode",
+                "model_loaded": False
+            }
+            
     except Exception as e:
+        print(f"❌ Prediction error: {str(e)}")
         return {
             "prediction": "Error",
             "confidence": 0.0,
-            "error": str(e)
+            "error": str(e),
+            "model_loaded": model_loaded
         }
-
-# Pydantic models
-class InspectionCreate(BaseModel):
-    asset_id: str
-    location: str
-    inspection_type: str = "visual"
-    notes: Optional[str] = None
-
-class Inspection(BaseModel):
-    inspection_id: str
-    asset_id: str
-    inspector_id: str
-    inspector_name: str
-    location: str
-    inspection_date: str
-    inspection_type: str
-    result: str
-    confidence_score: Optional[float]
-    notes: Optional[str]
-    image_data: Optional[str]
-    ai_prediction: Optional[dict]
-    created_at: str
-    updated_at: str
 
 async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current user from JWT token"""
@@ -93,30 +130,50 @@ async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials 
     
     return payload
 
-@router.post("", response_model=Inspection)
+@router.post("")
 async def create_inspection(
     asset_id: str = Form(...),
     location: str = Form(...),
     inspection_type: str = Form("visual"),
     notes: str = Form(""),
-    image: UploadFile = File(None),
-    current_user: Dict[str, Any] = Depends(get_current_user_from_token)  # Add this back
+    image: Optional[UploadFile] = File(None),
+    current_user: Dict[str, Any] = Depends(get_current_user_from_token)
 ):
     """Create a new inspection with AI-powered defect detection"""
     try:
-        # Generate inspection data
         inspection_id = str(uuid.uuid4())
         current_time = datetime.utcnow().isoformat() + "Z"
         
-        # Handle missing name field safely
         inspector_name = current_user.get("name") or current_user.get("email") or "Unknown Inspector"
+        inspector_id = current_user.get("user_id")
+        
+        print(f"🔍 Creating inspection for user: {inspector_name} (ID: {inspector_id})")
+        
+        # Validate that we have required data
+        if not inspector_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Inspector ID is required"
+            )
+        
+        # Ensure inspector_id is a valid UUID string
+        try:
+            uuid.UUID(inspector_id)  # This will raise ValueError if not valid UUID
+        except (ValueError, TypeError):
+            print(f"❌ Invalid inspector_id format: {inspector_id}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid inspector ID format"
+            )
         
         ai_prediction = None
         confidence_score = None
         image_data_base64 = None
         
-        # Process uploaded image if provided
-        if image:
+        # Process uploaded image
+        if image and image.filename:
+            print(f"📸 Processing image: {image.filename} ({image.content_type})")
+            
             # Validate file type
             if not image.content_type.startswith('image/'):
                 raise HTTPException(
@@ -124,41 +181,207 @@ async def create_inspection(
                     detail="Only image files are allowed"
                 )
             
-            # Read image data
+            # Check file size (limit to 10MB)
             image_bytes = await image.read()
+            if len(image_bytes) > 10 * 1024 * 1024:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Image file too large. Maximum size is 10MB."
+                )
             
             # Convert to base64 for storage
             image_data_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            print(f"📊 Image encoded to base64, size: {len(image_data_base64)} characters")
             
             # Run AI prediction
+            print("🤖 Running AI defect detection...")
             ai_prediction = predict_defect(image_bytes)
             confidence_score = ai_prediction.get('confidence')
+            
+            if ai_prediction.get('prediction') == 'Error':
+                print(f"❌ AI prediction failed: {ai_prediction.get('error')}")
         
         # Determine inspection result
-        if ai_prediction:
+        if ai_prediction and ai_prediction.get('prediction') != 'Error':
             result = ai_prediction['prediction']
+            inspection_type = "ai_assisted"  # Update inspection type when AI is used
         else:
             result = "Manual Inspection Required"
         
+        # Prepare inspection data (matching database schema)
         inspection_data = {
-            "inspection_id": inspection_id,
+            "inspection_id": inspection_id,  # UUID string
             "asset_id": asset_id,
-            "inspector_id": current_user["user_id"],
+            "inspector_id": inspector_id,  # UUID string
             "inspector_name": inspector_name,
             "location": location,
             "inspection_date": current_time,
             "inspection_type": inspection_type,
             "result": result,
-            "confidence_score": confidence_score,
             "notes": notes,
             "image_data": image_data_base64,
-            "ai_prediction": ai_prediction,
             "created_at": current_time,
             "updated_at": current_time
         }
         
+        # Add optional fields only if they have values
+        if confidence_score is not None:
+            inspection_data["confidence_score"] = confidence_score
+            
+        if ai_prediction is not None:
+            # Try both possible column names for AI prediction
+            inspection_data["ai_prediction"] = ai_prediction
+        
+        print(f"📋 Prepared inspection data: {inspection_id}")
+        print(f"📋 Data keys: {list(inspection_data.keys())}")
+        print(f"📋 Inspector ID: {current_user['user_id']}")
+        print(f"📋 Asset ID: {asset_id}")
+        print(f"📋 Result: {result}")
+        
         # Store in Supabase
+        async with httpx.AsyncClient(timeout=30.0) as client:  # Add timeout
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"  # Get the created record back
+            }
+            
+            print(f"🚀 Sending request to Supabase...")
+            print(f"🔗 URL: {SUPABASE_URL}/rest/v1/inspections")
+            print(f"📋 Final data keys: {list(inspection_data.keys())}")
+            
+            response = await client.post(
+                f"{SUPABASE_URL}/rest/v1/inspections",
+                headers=headers,
+                json=inspection_data
+            )
+            
+            print(f"📡 Supabase response status: {response.status_code}")
+            
+            # If we get a 400 error about ai_prediction column, try without it
+            if response.status_code == 400 and "ai_prediction" in response.text:
+                print("🔄 Retrying without ai_prediction column...")
+                inspection_data_retry = inspection_data.copy()
+                inspection_data_retry.pop("ai_prediction", None)
+                
+                response = await client.post(
+                    f"{SUPABASE_URL}/rest/v1/inspections",
+                    headers=headers,
+                    json=inspection_data_retry
+                )
+                print(f"📡 Retry response status: {response.status_code}")
+            
+            # Log first 1000 chars of response for debugging
+            response_text = response.text
+            print(f"📡 Supabase response text (first 1000 chars): {response_text[:1000]}")
+            
+            if response.status_code == 201:
+                try:
+                    created_inspection = response.json()
+                    print(f"✅ Inspection created successfully: {inspection_id}")
+                    return created_inspection[0] if isinstance(created_inspection, list) else created_inspection
+                except Exception as json_error:
+                    print(f"❌ JSON parsing error: {str(json_error)}")
+                    print(f"❌ Full response text: {response_text}")
+                    # Return our original data as fallback
+                    return inspection_data
+            else:
+                error_detail = f"Supabase error {response.status_code}: {response_text}"
+                print(f"❌ Supabase error: {error_detail}")
+                
+                # Try to parse error response for more details
+                try:
+                    error_json = response.json()
+                    if 'message' in error_json:
+                        error_detail = f"Supabase error: {error_json['message']}"
+                    elif 'details' in error_json:
+                        error_detail = f"Supabase error: {error_json['details']}"
+                    print(f"❌ Parsed error: {error_json}")
+                except:
+                    pass
+                
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error_detail
+                )
+            
+    except HTTPException as he:
+        print(f"❌ HTTP Exception in create_inspection: {he.detail}")
+        raise he
+    except Exception as e:
+        error_msg = str(e)
+        print(f"❌ Unexpected error in create_inspection: {error_msg}")
+        print(f"❌ Error type: {type(e).__name__}")
+        
+        # Print full traceback for debugging
+        import traceback
+        traceback.print_exc()
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create inspection: {error_msg}"
+        )
+
+# Add a test endpoint to check database connectivity
+@router.get("/test/db")
+async def test_database_connection(current_user: Dict[str, Any] = Depends(get_current_user_from_token)):
+    """Test database connectivity"""
+    try:
         async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            # Simple query to test connection
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/inspections",
+                headers=headers,
+                params={"limit": "1"}
+            )
+            
+            return {
+                "status": "success" if response.status_code == 200 else "error",
+                "status_code": response.status_code,
+                "response_length": len(response.text),
+                "response_preview": response.text[:200] if response.text else "No response text",
+                "supabase_url": SUPABASE_URL,
+                "has_api_key": bool(SUPABASE_KEY),
+                "user_id": current_user.get("user_id")
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+# Add endpoint to test simple data insertion
+@router.post("/test/insert")
+async def test_simple_insert(current_user: Dict[str, Any] = Depends(get_current_user_from_token)):
+    """Test simple data insertion without images"""
+    try:
+        test_id = str(uuid.uuid4())
+        current_time = datetime.utcnow().isoformat() + "Z"
+        
+        simple_data = {
+            "inspection_id": test_id,
+            "asset_id": "TEST-001",
+            "inspector_id": current_user["user_id"],
+            "inspector_name": "Test User",
+            "location": "Test Location",
+            "inspection_date": current_time,
+            "inspection_type": "test",
+            "result": "Test Result",
+            "notes": "Test inspection",
+            "created_at": current_time,
+            "updated_at": current_time
+            # Note: Removed ai_prediction, added as ai_predication if needed
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
             headers = {
                 "apikey": SUPABASE_KEY,
                 "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -168,26 +391,36 @@ async def create_inspection(
             response = await client.post(
                 f"{SUPABASE_URL}/rest/v1/inspections",
                 headers=headers,
-                json=inspection_data
+                json=simple_data
             )
             
-            if response.status_code != 201:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to create inspection: {response.text}"
-                )
+            return {
+                "status": "success" if response.status_code == 201 else "error",
+                "status_code": response.status_code,
+                "response_text": response.text,
+                "data_sent": simple_data
+            }
             
-            return inspection_data
-            
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create inspection: {str(e)}"
-        )
-    
-@router.get("", response_model=List[Inspection])
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+# Add model info endpoint
+@router.get("/model/info")
+async def get_model_info(current_user: Dict[str, Any] = Depends(get_current_user_from_token)):
+    """Get information about the loaded AI model"""
+    return {
+        "model_loaded": model_loaded,
+        "model_path": "E:/gowsi/miniproject/SIH/ML_model/rail_defect_model.keras",
+        "model_type": "MobileNetV2",
+        "input_shape": model.input_shape if model else None,
+        "status": "Ready for predictions" if model_loaded else "Model not loaded"
+    }
+
+@router.get("", response_model=List[Dict])
 async def get_inspections(
     asset_id: Optional[str] = None,
     inspector_id: Optional[str] = None,
@@ -239,7 +472,7 @@ async def get_inspections(
             detail=f"Failed to retrieve inspections: {str(e)}"
         )
 
-@router.get("/{inspection_id}", response_model=Inspection)
+@router.get("/{inspection_id}", response_model=Dict)
 async def get_inspection(
     inspection_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user_from_token)
@@ -348,3 +581,13 @@ async def get_inspection_analytics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get inspection analytics: {str(e)}"
         )
+
+@router.get("/debug/model")
+async def debug_model_status():
+    """Debug endpoint to check model status"""
+    return {
+        "model_loaded": model_loaded,
+        "model_path": os.path.join(os.path.dirname(__file__), '../../..', 'ML_model', 'rail_defect_model.keras'),
+        "path_exists": os.path.exists(os.path.join(os.path.dirname(__file__), '../../..', 'ML_model', 'rail_defect_model.keras')),
+        "tensorflow_version": tf.__version__ if 'tf' in globals() else "Not imported"
+    }

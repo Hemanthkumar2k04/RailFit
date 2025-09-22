@@ -51,7 +51,8 @@ export default function InspectionsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
-  
+  // Modal state for inspection details
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
   // Form state
   const [formData, setFormData] = useState({
     asset_id: '',
@@ -406,10 +407,92 @@ export default function InspectionsPage() {
 
             <div className="flex justify-between items-center pt-4 border-t">
               <span className="text-xs text-gray-500 capitalize">{inspection.inspection_type}</span>
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              <button
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                onClick={() => setSelectedInspection(inspection)}
+                type="button"
+              >
                 View Details
               </button>
             </div>
+      {/* Inspection Details Modal */}
+      {selectedInspection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Inspection Details</h2>
+              <button
+                className="text-gray-400 hover:text-gray-700 text-xl font-bold px-2"
+                onClick={() => setSelectedInspection(null)}
+                aria-label="Close"
+                type="button"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Inspection ID:</span>
+                  <span className="text-gray-900">{selectedInspection.inspection_id}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Asset ID:</span>
+                  <span className="text-gray-900">{selectedInspection.asset_id}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Inspector:</span>
+                  <span className="text-gray-900">{selectedInspection.inspector_name}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Location:</span>
+                  <span className="text-gray-900">{selectedInspection.location}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Date:</span>
+                  <span className="text-gray-900">{formatDate(selectedInspection.inspection_date)}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Type:</span>
+                  <span className="text-gray-900 capitalize">{selectedInspection.inspection_type}</span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Result:</span>
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${resultStyles[selectedInspection.result as keyof typeof resultStyles]}`}>{selectedInspection.result}</span>
+                </div>
+                {selectedInspection.confidence_score !== undefined && (
+                  <div className="flex gap-2 items-center">
+                    <span className="font-medium text-gray-700">AI Confidence:</span>
+                    <span className="text-gray-900">{(selectedInspection.confidence_score * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+                {selectedInspection.ai_prediction && (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-gray-700">AI Prediction:</span>
+                    <span className="text-gray-900">{selectedInspection.ai_prediction.prediction} ({(selectedInspection.ai_prediction.confidence * 100).toFixed(0)}% confidence, {(selectedInspection.ai_prediction.defect_probability * 100).toFixed(0)}% defect probability)</span>
+                  </div>
+                )}
+                {selectedInspection.notes && (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-gray-700">Notes:</span>
+                    <span className="text-gray-900">{selectedInspection.notes}</span>
+                  </div>
+                )}
+                {selectedInspection.image_data && (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-gray-700">Image:</span>
+                    <img src={selectedInspection.image_data} alt="Inspection" className="w-40 h-40 object-cover rounded border" />
+                  </div>
+                )}
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-700">Created At:</span>
+                  <span className="text-gray-900">{formatDate(selectedInspection.created_at)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
           </div>
         ))}
       </div>
