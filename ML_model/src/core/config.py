@@ -14,7 +14,7 @@ class Config:
     TEST_PATH: str = 'Test'
     
     # Model parameters - Optimized for CPU training
-    IMAGE_SIZE: Tuple[int, int] = (224, 224)  # Optimal for EfficientNet
+    IMAGE_SIZE: Tuple[int, int] = (224, 224)  # Standard input size for transfer learning
     BATCH_SIZE: int = 16  # Reduced for CPU training (memory efficient)
     EPOCHS: int = 25  # Balanced for good results
     
@@ -26,11 +26,11 @@ class Config:
     RESULTS_PATH: str = './results'
     LOGS_PATH: str = './logs'
     
-    # Model selection - EfficientNet for better performance with less data
-    MODELS_TO_TRAIN: List[str] = field(default_factory=lambda: ['efficientnet_b0'])  # Best for limited data
-    # Alternative: ['efficientnet_b0', 'efficientnet_b3'] for comparison
+    # Model selection - Focus on proven architectures
+    MODELS_TO_TRAIN: List[str] = field(default_factory=lambda: ['resnet50'])  # Stable and reliable
+    # Available options: ['resnet50', 'vgg16', 'inception_v3']
     
-    # Training parameters - Optimized for EfficientNet
+    # Training parameters - Optimized for transfer learning
     LEARNING_RATE: float = 1e-4  # Lower learning rate for transfer learning
     EARLY_STOPPING_PATIENCE: int = 7  # More patience for better convergence
     REDUCE_LR_PATIENCE: int = 4  # Reduce LR when plateau is detected

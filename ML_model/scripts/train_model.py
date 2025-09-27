@@ -26,7 +26,6 @@ def main():
     print(f"  Batch size: {config.BATCH_SIZE}")
     print(f"  Epochs: {config.EPOCHS}")
     print(f"  Models to train: {config.MODELS_TO_TRAIN}")
-    print(f"  Mixed precision: {config.USE_MIXED_PRECISION}")
     
     # Check if data exists
     data_pipeline = DataPipeline(config)
