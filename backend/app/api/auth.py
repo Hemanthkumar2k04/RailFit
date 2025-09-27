@@ -7,7 +7,7 @@ import httpx
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
 
 # Supabase configuration

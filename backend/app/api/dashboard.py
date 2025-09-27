@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 import httpx
 
-router = APIRouter(prefix="/api", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 # Supabase configuration
 SUPABASE_URL = "https://nlxrpnjccouogrfbbgmk.supabase.co"

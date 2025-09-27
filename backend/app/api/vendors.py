@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from app.core.security import verify_token
 import httpx
 
-router = APIRouter(tags=["Vendors"])
+router = APIRouter(prefix="/vendors", tags=["Vendors"])
 security = HTTPBearer()
 
 # Supabase configuration

@@ -13,7 +13,7 @@ import csv
 from datetime import datetime
 from pydantic import BaseModel
 
-router = APIRouter(tags=["Assets"])
+router = APIRouter(prefix="/assets", tags=["Assets"])
 security = HTTPBearer()
 
 # Supabase configuration

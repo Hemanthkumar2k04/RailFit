@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, assets, dashboard
+from app.api import auth, assets, dashboard, mobile, inspections, vendors
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,7 +33,11 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(assets.router, prefix="/api")
-app.include_router(dashboard.router)
+app.include_router(dashboard.router, prefix="/api")
+app.include_router(mobile.router, prefix="/api")
+app.include_router(inspections.router, prefix="/api")
+app.include_router(vendors.router, prefix="/api")
+app.include_router(inspections.router, prefix="/api")
 
 @app.get("/")
 async def root():

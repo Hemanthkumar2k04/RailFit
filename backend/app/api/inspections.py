@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 import os
 
-router = APIRouter(tags=["Inspections"])
+router = APIRouter(prefix="/inspections", tags=["Inspections"])
 security = HTTPBearer()
 
 # Supabase configuration
