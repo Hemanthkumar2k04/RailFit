@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 # Validate configuration before creating engine
 settings.validate_config()
 
-# Convert database URL to use psycopg (async) driver for Supabase compatibility
+# Convert database URL to use asyncpg (async) driver for Supabase compatibility
 database_url = settings.database_url
 if database_url.startswith("postgresql://"):
-    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 # Create async engine for PostgreSQL/Supabase
 engine = create_async_engine(
