@@ -21,7 +21,6 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
     warrantyPeriod: 24
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [qrCode, setQrCode] = useState<string>('');
   const [createdAsset, setCreatedAsset] = useState<Asset | null>(null);
   const [error, setError] = useState<string>('');
 
@@ -68,7 +67,6 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
       };
       
       setCreatedAsset(asset);
-      setQrCode(result.qr_code || '');
       
       if (onAssetAdded) {
         onAssetAdded(asset);
@@ -88,7 +86,6 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
       location: '',
       warrantyPeriod: 24
     });
-    setQrCode('');
     setCreatedAsset(null);
     setError('');
     onClose();

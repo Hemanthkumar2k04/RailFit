@@ -1,0 +1,38 @@
+# Production Requirements for RailFIT FastAPI Backend
+# Core FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+
+# Database
+supabase==2.9.0
+asyncpg==0.30.0
+psycopg2-binary==2.9.9
+sqlalchemy[asyncio]==2.0.36
+alembic==1.13.2
+greenlet==3.1.1
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.12
+bcrypt==4.3.0
+
+# HTTP Client
+httpx==0.28.1
+
+# Environment & Configuration
+python-dotenv==1.0.1
+pydantic==2.10.2
+pydantic-settings==2.6.1
+
+# Image Processing & QR Codes
+Pillow==11.0.0
+qrcode[pil]==8.1.0
+
+# AI/ML for Inspections
+tensorflow==2.18.0
+numpy==1.26.4
+
+# Utilities
+python-dateutil==2.9.0.post0

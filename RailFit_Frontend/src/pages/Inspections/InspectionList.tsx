@@ -66,11 +66,7 @@ export default function InspectionsPage() {
     return localStorage.getItem('jwt_token');
   };
 
-  // API headers with authentication
-  const getHeaders = () => ({
-    'Authorization': `Bearer ${getAuthToken()}`,
-    'Content-Type': 'application/json',
-  });
+  // API headers with authentication (using apiCall helper instead)
 
   useEffect(() => {
     fetchInspections();
