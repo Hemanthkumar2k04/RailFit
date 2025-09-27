@@ -26,7 +26,10 @@ class Settings(BaseSettings):
     bcrypt_rounds: int = 12
     
     # CORS
-    allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
+    # Allow configuring allowed origins via the ALLOWED_ORIGINS environment variable (comma-separated).
+    # Example: ALLOWED_ORIGINS="https://my-frontend.vercel.app,https://example.com"
+    _default_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
+    allowed_origins: list[str] = [o.strip() for o in (os.getenv("ALLOWED_ORIGINS") or ",".join(_default_origins)).split(",") if o.strip()]
     
     # File Upload
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
