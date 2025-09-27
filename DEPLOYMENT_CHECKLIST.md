@@ -45,7 +45,7 @@
 
 2. **Configure Service**
    - Create new service
-   - Select `backend` folder as root
+   - In Service Settings → Source tab → Set **Root Directory** to `backend`
    - Railway will detect Dockerfile automatically
 
 3. **Set Environment Variables**
