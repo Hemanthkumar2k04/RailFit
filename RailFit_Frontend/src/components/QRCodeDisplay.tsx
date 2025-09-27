@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { QrCode, Download, Eye, X } from 'lucide-react';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface QRCodeDisplayProps {
   assetId: string;
@@ -49,7 +50,7 @@ export default function QRCodeDisplay({
 
       if (format === 'json') {
         // Get JSON data for display
-        const response = await fetch(`http://localhost:5000/api/assets/${assetId}/qr?format=json`, {
+        const response = await fetch(API_ENDPOINTS.ASSETS.QR_CODE(assetId) + '?format=json', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -65,7 +66,7 @@ export default function QRCodeDisplay({
         return data;
       } else {
         // Get PNG/SVG image
-        const response = await fetch(`http://localhost:5000/api/assets/${assetId}/qr?format=${format}`, {
+        const response = await fetch(API_ENDPOINTS.ASSETS.QR_CODE(assetId) + `?format=${format}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -94,7 +95,7 @@ export default function QRCodeDisplay({
       const token = localStorage.getItem('jwt_token');
       if (!token) return;
 
-      const response = await fetch(`http://localhost:5000/api/assets/${assetId}/qr?format=${format}`, {
+      const response = await fetch(API_ENDPOINTS.ASSETS.QR_CODE(assetId) + `?format=${format}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

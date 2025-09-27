@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Download, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -105,7 +106,7 @@ Sleeper,Platform 2,VENDOR001,2023-03-05,30,88,active,Concrete railway sleeper,SL
       formData.append('file', selectedFile);
 
       const token = localStorage.getItem('jwt_token');
-      const url = new URL('http://localhost:5000/api/assets/bulk-import');
+      const url = new URL(API_ENDPOINTS.ASSETS.BULK_IMPORT);
       url.searchParams.append('duplicate_strategy', duplicateStrategy);
       
       const response = await fetch(url.toString(), {

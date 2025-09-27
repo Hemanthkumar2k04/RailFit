@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Plus, Package, RefreshCw, TrendingUp, Activity } from "lucide-react";
 import AddAssetModal from "@/components/AddAssetModal";
+import { API_ENDPOINTS } from "@/config/api";
 
 // Utility functions
 const formatNumber = (num: number, decimals = 2): string => {
@@ -78,7 +79,7 @@ export default function Dashboard() {
 
       console.log('Dashboard: Fetching metrics from API...');
       // Fetch metrics from the centralized endpoint
-      const response = await fetch('http://localhost:5000/api/assets/metrics', {
+      const response = await fetch(API_ENDPOINTS.ASSETS.METRICS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

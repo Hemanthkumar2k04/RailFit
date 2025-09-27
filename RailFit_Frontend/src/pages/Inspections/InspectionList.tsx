@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Camera, Upload, Calendar, User, MapPin, AlertTriangle, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { API_ENDPOINTS } from "@/config/api";
 
 type Inspection = {
   inspection_id: string;
@@ -115,7 +116,7 @@ export default function InspectionsPage() {
         return;
       }
 
-      const response = await fetch('http://127.0.0.1:5000/api/inspections/analytics/summary', {
+      const response = await fetch(API_ENDPOINTS.INSPECTIONS.ANALYTICS, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

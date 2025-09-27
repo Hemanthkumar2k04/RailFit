@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Package, QrCode, CheckCircle, AlertCircle } from 'lucide-react';
 import type { Asset, AssetCreate } from '@/types/asset';
 import { ASSET_TYPES } from '@/types/asset';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface AddAssetModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export default function AddAssetModal({ isOpen, onClose, onAssetAdded }: AddAsse
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch('http://localhost:5000/api/assets/', {
+      const response = await fetch(API_ENDPOINTS.ASSETS.BASE + '/', {
         method: 'POST',
         headers,
         body: JSON.stringify(formData),
