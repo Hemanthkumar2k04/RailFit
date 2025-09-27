@@ -48,6 +48,12 @@ cover/
 # Virtual environments
 
 .venv
+
+# ML Model Data - Images and trained models
+ML_model/data/
+ML_model/models/
+ML_model/logs/
+ML_model/results/
 env/
 venv/
 ENV/

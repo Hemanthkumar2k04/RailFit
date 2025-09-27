@@ -1,11 +1,3 @@
-# %% [code] {"jupyter":{"outputs_hidden":false}}
-# Libraries
-
-# %% [code] {"execution":{"execution_failed":"2025-09-16T18:33:41.792Z"},"jupyter":{"outputs_hidden":false}}
-!pip install opencv-python==4.5.5.62
-!pip install opencv-contrib-python==4.5.5.62
-!pip install tf-explain
-
 # %% [code] {"execution":{"execution_failed":"2025-09-16T18:33:41.794Z"},"jupyter":{"outputs_hidden":false}}
 import os
 import gc
@@ -46,10 +38,9 @@ import cv2
 from keras.preprocessing.image import ImageDataGenerator
 from numpy import expand_dims
 
-!pip install livelossplot
 from livelossplot import PlotLossesKeras
 
-%matplotlib inline
+
 
 # %% [markdown] {"jupyter":{"outputs_hidden":false}}
 # # Loading Dataset
