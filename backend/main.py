@@ -22,7 +22,6 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-print(f"CORS allowed origins: {settings.allowed_origins}")  # Debug log
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
