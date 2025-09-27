@@ -159,7 +159,7 @@ export default function InspectionsPage() {
         formDataToSend.append('image', selectedImage);
       }
 
-      const response = await fetch('http://127.0.0.1:5000/api/inspections', {
+      const response = await fetch(API_ENDPOINTS.INSPECTIONS.BASE, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
