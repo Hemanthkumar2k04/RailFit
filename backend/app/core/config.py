@@ -28,8 +28,14 @@ class Settings(BaseSettings):
     # CORS
     # Allow configuring allowed origins via the ALLOWED_ORIGINS environment variable (comma-separated).
     # Example: ALLOWED_ORIGINS="https://my-frontend.vercel.app,https://example.com"
-    _default_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
-    allowed_origins: list[str] = [o.strip() for o in (os.getenv("ALLOWED_ORIGINS") or ",".join(_default_origins)).split(",") if o.strip()]
+    _allowed_origins_str: str = os.getenv("ALLOWED_ORIGINS", "")
+    
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Parse allowed origins from env var or use defaults"""
+        if self._allowed_origins_str:
+            return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
+        return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "https://rail-9s0az9gvu-hemanthkumar-ks-projects.vercel.app/"]
     
     # File Upload
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
