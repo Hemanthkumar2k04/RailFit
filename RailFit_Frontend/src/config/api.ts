@@ -30,6 +30,11 @@ export const API_ENDPOINTS = {
   INSPECTIONS: {
     BASE: `${API_BASE_URL}/api/inspections`,
     ANALYTICS: `${API_BASE_URL}/api/inspections/analytics/summary`,
+  },
+  
+  // Alert endpoints
+  ALERTS: {
+    BASE: `${API_BASE_URL}/api/alerts`,
   }
 }
 
