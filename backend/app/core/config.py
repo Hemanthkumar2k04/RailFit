@@ -35,7 +35,13 @@ class Settings(BaseSettings):
         """Parse allowed origins from env var or use defaults"""
         if self._allowed_origins_str:
             return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
-        return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "https://rail-9s0az9gvu-hemanthkumar-ks-projects.vercel.app/"]
+        return [
+            "http://localhost:3000", 
+            "http://localhost:5173", 
+            "http://127.0.0.1:3000", 
+            "http://127.0.0.1:5173", 
+            "https://rail-fit.vercel.app"
+        ]
     
     # File Upload
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
