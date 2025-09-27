@@ -10,9 +10,9 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
 
-# Supabase configuration
-SUPABASE_URL = "https://nlxrpnjccouogrfbbgmk.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5seHJwbmpjY291b2dyZmJiZ21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzM2NjQsImV4cCI6MjA3Mzk0OTY2NH0.begglCbsqiTX7Sop_09BpTRHw31NGm9nThoTkk4aEJE"
+# Get Supabase configuration from settings
+SUPABASE_URL = settings.supabase_url
+SUPABASE_KEY = settings.supabase_anon_key
 
 # Pydantic models
 class User(BaseModel):
