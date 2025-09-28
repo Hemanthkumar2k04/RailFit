@@ -1,4 +1,4 @@
--- RailFit Asset Management Database Schema
+-- RailFit Asset Management Database Schema (Updated)
 -- Designed for Supabase PostgreSQL
 -- Created: September 2025
 
@@ -18,15 +18,17 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
 DROP TYPE IF EXISTS asset_type CASCADE;
 DROP TYPE IF EXISTS asset_status CASCADE;
+DROP TYPE IF EXISTS asset_condition CASCADE;
 DROP TYPE IF EXISTS alert_type CASCADE;
 DROP TYPE IF EXISTS alert_priority CASCADE;
 DROP TYPE IF EXISTS sync_type CASCADE;
 DROP TYPE IF EXISTS sync_status CASCADE;
 
--- Create custom ENUM types
+-- Create custom ENUM types with updated values
 CREATE TYPE user_role AS ENUM ('admin', 'manager', 'field_inspector');
 CREATE TYPE asset_type AS ENUM ('Elastic Rail Clip', 'Rail Pad', 'Liner', 'Sleeper');
-CREATE TYPE asset_status AS ENUM ('active', 'needs_maintenance', 'retired');
+CREATE TYPE asset_status AS ENUM ('active', 'under_maintenance', 'retired', 'not_installed');
+CREATE TYPE asset_condition AS ENUM ('excellent', 'good', 'ok', 'critical');
 CREATE TYPE alert_type AS ENUM ('immediate_maintenance', 'predictive_failure', 'info');
 CREATE TYPE alert_priority AS ENUM ('high', 'medium', 'low');
 CREATE TYPE sync_type AS ENUM ('full', 'delta');
@@ -55,7 +57,7 @@ CREATE TABLE vendors (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. ASSETS TABLE
+-- 3. ASSETS TABLE (Updated with new condition column and status enum)
 CREATE TABLE assets (
     asset_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type asset_type NOT NULL,
@@ -68,6 +70,7 @@ CREATE TABLE assets (
     health_score INTEGER CHECK (health_score >= 0 AND health_score <= 100),
     predicted_rul INTEGER, -- Remaining Useful Life in months
     status asset_status NOT NULL DEFAULT 'active',
+    condition asset_condition NOT NULL DEFAULT 'good',
     qr_code VARCHAR(255), -- QR code identifier
     metadata JSONB, -- Additional flexible data
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -143,6 +146,7 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_assets_type ON assets(type);
 CREATE INDEX idx_assets_status ON assets(status);
+CREATE INDEX idx_assets_condition ON assets(condition);
 CREATE INDEX idx_assets_vendor ON assets(vendor_id);
 CREATE INDEX idx_assets_location ON assets USING GIN(to_tsvector('english', location));
 CREATE INDEX idx_assets_gps ON assets(gps_lat, gps_lng);
@@ -188,20 +192,18 @@ ALTER TABLE alerts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE api_integrations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE photos DISABLE ROW LEVEL SECURITY;
 
--- Insert sample data for testing
+-- Insert demo users with same passwords
 INSERT INTO users (name, email, password_hash, role) VALUES 
-('Admin User', 'admin@railfit.com', '$2b$12$dummy.hash.for.testing', 'admin'),
-('Manager User', 'manager@railfit.com', '$2b$12$dummy.hash.for.testing', 'manager'),
-('Field Inspector', 'inspector@railfit.com', '$2b$12$dummy.hash.for.testing', 'field_inspector');
+('Admin User', 'admin@railfit.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LwPQZDNwNP.J1.JGW', 'admin'),
+('Manager User', 'manager@railfit.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LwPQZDNwNP.J1.JGW', 'manager'),
+('Field Inspector', 'inspector@railfit.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LwPQZDNwNP.J1.JGW', 'field_inspector');
 
+-- Insert sample vendors
 INSERT INTO vendors (name, contact_info, warranty_terms) VALUES 
-('RailTech Industries', '{"phone": "+1-555-0101", "email": "contact@railtech.com"}', '24 months standard warranty'),
-('TrackMaster Corp', '{"phone": "+1-555-0102", "email": "sales@trackmaster.com"}', '36 months extended warranty');
-
-INSERT INTO assets (type, vendor_id, install_date, location, gps_lat, gps_lng, warranty_period, health_score, predicted_rul, status) VALUES 
-('Elastic Rail Clip', (SELECT vendor_id FROM vendors WHERE name = 'RailTech Industries'), '2023-01-15', 'Main Line Section A', 40.7128, -74.0060, 24, 85, 18, 'active'),
-('Rail Pad', (SELECT vendor_id FROM vendors WHERE name = 'TrackMaster Corp'), '2023-02-20', 'Junction Point B', 40.7589, -73.9851, 36, 92, 30, 'active'),
-('Sleeper', (SELECT vendor_id FROM vendors WHERE name = 'RailTech Industries'), '2023-03-10', 'Bridge Crossing C', 40.7831, -73.9712, 24, 70, 12, 'needs_maintenance');
+('RailTech Industries', '{"phone": "+1-555-0101", "email": "contact@railtech.com", "address": "123 Railway Ave, Industrial City"}', '24 months standard warranty with replacement guarantee'),
+('TrackMaster Corp', '{"phone": "+1-555-0102", "email": "sales@trackmaster.com", "address": "456 Track Street, Metro City"}', '36 months extended warranty with on-site service'),
+('ClipCorp Solutions', '{"phone": "+1-555-0103", "email": "info@clipcorp.com", "address": "789 Component Blvd, Tech Park"}', '18 months warranty with performance guarantee'),
+('PadTech Industries', '{"phone": "+1-555-0104", "email": "support@padtech.com", "address": "321 Damper Road, Industrial Zone"}', '30 months warranty with maintenance support');
 
 -- Create a view for asset summary with vendor information
 CREATE OR REPLACE VIEW asset_summary AS
@@ -210,6 +212,7 @@ SELECT
     a.type,
     a.location,
     a.status,
+    a.condition,
     a.health_score,
     a.predicted_rul,
     v.name AS vendor_name,
@@ -220,7 +223,7 @@ FROM assets a
 LEFT JOIN vendors v ON a.vendor_id = v.vendor_id
 LEFT JOIN inspections i ON a.asset_id = i.asset_id
 LEFT JOIN alerts al ON a.asset_id = al.asset_id AND al.acknowledged_at IS NULL
-GROUP BY a.asset_id, a.type, a.location, a.status, a.health_score, a.predicted_rul, v.name;
+GROUP BY a.asset_id, a.type, a.location, a.status, a.condition, a.health_score, a.predicted_rul, v.name;
 
 -- Grant permissions (adjust as needed for your Supabase setup)
 -- These permissions ensure the app can read/write to all tables
@@ -231,4 +234,139 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
 -- Success message
-SELECT 'RailFit database schema created successfully! All tables, indexes, and sample data are ready.' as status;
+SELECT 'RailFit database schema updated successfully! New enums: asset_condition (excellent, good, ok, critical) and asset_status (active, under_maintenance, retired)' as status;
+
+
+-- Create inspections table in Supabase
+-- Run this SQL in your Supabase SQL editor
+
+CREATE TABLE inspections (
+  inspection_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  asset_id VARCHAR(255) NOT NULL,
+  inspector_id UUID NOT NULL,
+  inspector_name VARCHAR(255) NOT NULL,
+  location VARCHAR(255) NOT NULL,
+  inspection_date TIMESTAMPTZ NOT NULL DEFAULT now(),
+  inspection_type VARCHAR(50) NOT NULL DEFAULT 'visual',
+  result VARCHAR(50) NOT NULL,
+  confidence_score DECIMAL(3,2), -- Values between 0.00 and 1.00
+  notes TEXT,
+  image_data TEXT, -- Base64 encoded image data
+  ai_prediction JSONB, -- Store AI prediction results as JSON
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  
+  -- Foreign key constraint (assuming you have a users table)
+  CONSTRAINT fk_inspector_id FOREIGN KEY (inspector_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_inspections_asset_id ON inspections(asset_id);
+CREATE INDEX idx_inspections_inspector_id ON inspections(inspector_id);
+CREATE INDEX idx_inspections_result ON inspections(result);
+CREATE INDEX idx_inspections_date ON inspections(inspection_date);
+CREATE INDEX idx_inspections_created_at ON inspections(created_at);
+
+-- Create RLS (Row Level Security) policies
+ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
+
+-- Policy: All authenticated users can read inspections
+CREATE POLICY "Allow authenticated users to read inspections" ON inspections
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- Policy: All authenticated users can create inspections
+CREATE POLICY "Allow authenticated users to create inspections" ON inspections
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+-- Policy: Users can update their own inspections
+CREATE POLICY "Allow users to update own inspections" ON inspections
+  FOR UPDATE TO authenticated
+  USING (inspector_id = auth.uid());
+
+-- Policy: Only admin and managers can delete inspections
+CREATE POLICY "Allow admin/manager to delete inspections" ON inspections
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.user_id = auth.uid() 
+      AND users.role IN ('admin', 'manager')
+    )
+  );
+
+-- Create trigger to automatically update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_inspections_updated_at 
+  BEFORE UPDATE ON inspections 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Insert some sample data for testing
+INSERT INTO inspections (
+  asset_id,
+  inspector_id,
+  inspector_name,
+  location,
+  inspection_type,
+  result,
+  confidence_score,
+  notes,
+  ai_prediction
+) VALUES 
+(
+  'AST-001',
+  (SELECT user_id FROM users WHERE email = 'admin@railfit.com' LIMIT 1),
+  'Admin User',
+  'Track Section A-1',
+  'ai_assisted',
+  'Defective',
+  0.87,
+  'Visible crack detected on rail joint',
+  '{"prediction": "Defective", "confidence": 0.87, "defect_probability": 0.87}'::jsonb
+),
+(
+  'AST-002',
+  (SELECT user_id FROM users WHERE email = 'inspector@railfit.com' LIMIT 1),
+  'Inspector User',
+  'Junction Point B-3',
+  'visual',
+  'Non-Defective',
+  0.92,
+  'All components within normal parameters',
+  '{"prediction": "Non-Defective", "confidence": 0.92, "defect_probability": 0.08}'::jsonb
+),
+(
+  'AST-003',
+  (SELECT user_id FROM users WHERE email = 'manager@railfit.com' LIMIT 1),
+  'Manager User',
+  'Bridge Section C-2',
+  'detailed',
+  'Non-Defective',
+  0.78,
+  'Minor wear observed but within acceptable limits',
+  '{"prediction": "Non-Defective", "confidence": 0.78, "defect_probability": 0.22}'::jsonb
+);
+
+-- Create view for inspection analytics
+CREATE OR REPLACE VIEW inspection_analytics AS
+SELECT 
+  COUNT(*) as total_inspections,
+  COUNT(CASE WHEN result = 'Defective' THEN 1 END) as defective_count,
+  COUNT(CASE WHEN result = 'Non-Defective' THEN 1 END) as non_defective_count,
+  ROUND(
+    (COUNT(CASE WHEN result = 'Defective' THEN 1 END) * 100.0 / COUNT(*)), 
+    2
+  ) as defect_rate,
+  ROUND(AVG(confidence_score), 2) as average_confidence,
+  COUNT(CASE WHEN inspection_date >= NOW() - INTERVAL '7 days' THEN 1 END) as recent_inspections_count
+FROM inspections
+WHERE created_at >= NOW() - INTERVAL '1 year'; -- Only count inspections from last year
