@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
     # JWT Config
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY")
-    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-    jwt_access_token_expire_minutes: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "").split('#')[0].strip()
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256").split('#')[0].strip()
+    jwt_access_token_expire_minutes: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440").split('#')[0].strip())  # 24 hours
     
     # Security
     bcrypt_rounds: int = 12
@@ -37,8 +37,10 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
         return [
             "http://localhost:3000", 
+            "http://localhost:5000",
             "http://localhost:5173", 
             "http://127.0.0.1:3000", 
+            "http://127.0.0.1:5000",
             "http://127.0.0.1:5173", 
             "https://rail-fit.vercel.app"
         ]

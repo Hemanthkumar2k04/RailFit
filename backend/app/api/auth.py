@@ -39,44 +39,58 @@ class Token(BaseModel):
     user: User
 
 async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
-    """Get user by email using Supabase REST API"""
-    async with httpx.AsyncClient() as client:
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        response = await client.get(
-            f"{SUPABASE_URL}/rest/v1/users",
-            headers=headers,
-            params={"email": f"eq.{email}"}
-        )
-        
-        if response.status_code == 200:
-            users = response.json()
-            return users[0] if users else None
-        return None
+    """Get user by email using direct database query"""
+    from app.core.database import AsyncSessionLocal
+    from sqlalchemy import text
+    
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                text("SELECT user_id, email, name, role, password_hash FROM users WHERE email = :email"),
+                {"email": email}
+            )
+            user_row = result.fetchone()
+            
+            if user_row:
+                # Convert to dictionary
+                return {
+                    "user_id": str(user_row.user_id),
+                    "email": user_row.email,
+                    "name": user_row.name,
+                    "role": user_row.role,
+                    "password_hash": user_row.password_hash
+                }
+            return None
+        except Exception as e:
+            print(f"Database error in get_user_by_email: {e}")
+            return None
 
 async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
-    """Get user by ID using Supabase REST API"""
-    async with httpx.AsyncClient() as client:
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        response = await client.get(
-            f"{SUPABASE_URL}/rest/v1/users",
-            headers=headers,
-            params={"user_id": f"eq.{user_id}"}
-        )
-        
-        if response.status_code == 200:
-            users = response.json()
-            return users[0] if users else None
-        return None
+    """Get user by ID using direct database query"""
+    from app.core.database import AsyncSessionLocal
+    from sqlalchemy import text
+    
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                text("SELECT user_id, email, name, role, password_hash FROM users WHERE user_id = :user_id"),
+                {"user_id": user_id}
+            )
+            user_row = result.fetchone()
+            
+            if user_row:
+                # Convert to dictionary
+                return {
+                    "user_id": str(user_row.user_id),
+                    "email": user_row.email,
+                    "name": user_row.name,
+                    "role": user_row.role,
+                    "password_hash": user_row.password_hash
+                }
+            return None
+        except Exception as e:
+            print(f"Database error in get_user_by_id: {e}")
+            return None
 
 async def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     """Authenticate user with email and password"""
@@ -84,19 +98,12 @@ async def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any
     if not user:
         return None
     
-    # For demo purposes, accept some simple passwords
-    # In production, you'd verify against the actual password_hash
-    demo_passwords = {
-        "admin@railfit.com": "admin123",
-        "manager@railfit.com": "manager123", 
-        "inspector@railfit.com": "inspector123"
-    }
-    
-    if email in demo_passwords and password == demo_passwords[email]:
+    # Check against the actual hashed password in database
+    if user.get("password_hash") and verify_password(password, user["password_hash"]):
         return user
     
-    # Also check against the actual hash if available
-    if user.get("password_hash") and verify_password(password, user["password_hash"]):
+    # For demo purposes, also accept railway123 for all users
+    if password == "railway123":
         return user
     
     return None

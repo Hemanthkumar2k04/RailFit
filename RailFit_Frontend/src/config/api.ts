@@ -1,8 +1,8 @@
 // API Configuration
 // Centralized API base URL configuration to avoid hardcoded URLs throughout the app
 
-// Default to Railway production URL, fallback to localhost for development
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://railfit-production.up.railway.app'
+// Default to localhost for development, use VITE_API_BASE_URL for production
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
 // API endpoints
 export const API_ENDPOINTS = {
