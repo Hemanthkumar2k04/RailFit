@@ -2,5 +2,15 @@
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python-envs.pythonProjects": [],
     "python.pythonPath": ".venv\\Scripts\\python.exe",
-    "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe"
+    "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": ["-ExecutionPolicy", "Bypass"]
+        }
+    },
+    "python.envFile": "${workspaceFolder}/.env"
 }
