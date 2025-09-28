@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 import os
 
-router = APIRouter(prefix="/inspections", tags=["Inspections"])
+router = APIRouter(tags=["Inspections"])
 security = HTTPBearer()
 
 # Get Supabase configuration from settings
@@ -130,6 +130,71 @@ async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials 
         raise credentials_exception
     
     return payload
+
+async def update_asset_health_score(client: httpx.AsyncClient, headers: dict, asset_id: str, ai_prediction: dict, result: str):
+    """Update asset health score based on AI prediction and trigger RUL recalculation"""
+    try:
+        print(f"🏥 Updating health score for asset {asset_id}")
+        
+        # Calculate new health score based on AI prediction
+        confidence = ai_prediction.get('confidence', 0)
+        defect_probability = ai_prediction.get('defect_probability', 0)
+        
+        # Calculate health degradation based on prediction
+        if result == "Defective":
+            # Significant health degradation for defective items
+            health_degradation = max(10, int(confidence * 20))  # 10-20% degradation
+        elif result == "Non-Defective":
+            # Minor degradation even for non-defective (normal wear)
+            health_degradation = max(1, int((1 - confidence) * 5))  # 1-5% degradation
+        else:
+            # Manual inspection required - moderate degradation
+            health_degradation = 5
+        
+        # Get current asset health score
+        asset_response = await client.get(
+            f"{SUPABASE_URL}/rest/v1/assets",
+            headers=headers,
+            params={
+                "select": "health_score",
+                "asset_id": f"eq.{asset_id}"
+            }
+        )
+        
+        if asset_response.status_code == 200:
+            assets = asset_response.json()
+            if assets:
+                current_health = assets[0].get('health_score', 100)
+                new_health = max(0, current_health - health_degradation)
+                
+                print(f"🏥 Health score update: {current_health}% -> {new_health}% (degradation: -{health_degradation}%)")
+                
+                # Update asset health score
+                update_response = await client.patch(
+                    f"{SUPABASE_URL}/rest/v1/assets",
+                    headers=headers,
+                    params={"asset_id": f"eq.{asset_id}"},
+                    json={
+                        "health_score": new_health,
+                        "updated_at": datetime.utcnow().isoformat() + "Z"
+                    }
+                )
+                
+                if update_response.status_code == 204:
+                    print(f"✅ Asset health score updated successfully")
+                    
+                    # The RUL system will automatically recalculate via database triggers
+                    print(f"🔄 RUL system will automatically recalculate remaining useful life")
+                else:
+                    print(f"⚠️ Failed to update asset health score: {update_response.status_code}")
+            else:
+                print(f"⚠️ Asset {asset_id} not found for health score update")
+        else:
+            print(f"⚠️ Failed to fetch current asset health score: {asset_response.status_code}")
+            
+    except Exception as e:
+        print(f"❌ Error updating asset health score: {str(e)}")
+        # Don't raise exception - health score update failure shouldn't break inspection creation
 
 @router.post("")
 async def create_inspection(
@@ -281,6 +346,11 @@ async def create_inspection(
                 try:
                     created_inspection = response.json()
                     print(f"✅ Inspection created successfully: {inspection_id}")
+                    
+                    # Update asset health score based on AI prediction
+                    if ai_prediction and ai_prediction.get('prediction') != 'Error':
+                        await update_asset_health_score(client, headers, asset_id, ai_prediction, result)
+                    
                     return created_inspection[0] if isinstance(created_inspection, list) else created_inspection
                 except Exception as json_error:
                     print(f"❌ JSON parsing error: {str(json_error)}")
@@ -514,6 +584,66 @@ async def get_inspection(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve inspection: {str(e)}"
+        )
+
+@router.get("/asset/{asset_id}")
+async def get_asset_details(
+    asset_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user_from_token)
+):
+    """Get asset details for inspection form prefill"""
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            # Get asset details with vendor information
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/assets",
+                headers=headers,
+                params={
+                    "select": "asset_id,type,location,health_score,status,condition,vendor_id,vendors(name)",
+                    "asset_id": f"eq.{asset_id}"
+                }
+            )
+            
+            if response.status_code == 200:
+                assets = response.json()
+                if assets:
+                    asset = assets[0]
+                    
+                    # Format the response
+                    asset_details = {
+                        "asset_id": asset.get("asset_id"),
+                        "type": asset.get("type"),
+                        "location": asset.get("location"),
+                        "health_score": asset.get("health_score"),
+                        "status": asset.get("status"),
+                        "condition": asset.get("condition"),
+                        "vendor_name": asset.get("vendors", {}).get("name") if asset.get("vendors") else None
+                    }
+                    
+                    return asset_details
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Asset {asset_id} not found"
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve asset details"
+                )
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve asset details: {str(e)}"
         )
 
 @router.get("/analytics/summary")

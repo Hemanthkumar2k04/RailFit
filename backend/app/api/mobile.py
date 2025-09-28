@@ -6,7 +6,7 @@ from app.core.security import verify_token
 import httpx
 import json
 
-router = APIRouter(prefix="/mobile", tags=["Mobile"])
+router = APIRouter(tags=["Mobile"])
 security = HTTPBearer()
 
 # Get Supabase configuration from settings

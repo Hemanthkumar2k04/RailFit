@@ -54,6 +54,16 @@ export default function InspectionsPage() {
   const [error, setError] = useState<string | null>(null);
   // Modal state for inspection details
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  // Asset details state for enhanced modal
+  const [assetDetails, setAssetDetails] = useState<{
+    type?: string;
+    location?: string;
+    health_score?: number;
+    vendor_name?: string;
+    status?: string;
+    condition?: string;
+  }>({});
+  const [isLoadingAsset, setIsLoadingAsset] = useState(false);
   // Form state
   const [formData, setFormData] = useState({
     asset_id: '',
@@ -132,6 +142,77 @@ export default function InspectionsPage() {
       console.error('Error fetching analytics:', error);
       // Analytics failure shouldn't block the main functionality
     }
+  };
+
+  // Fetch asset details when asset ID changes
+  const fetchAssetDetails = async (assetId: string) => {
+    if (!assetId.trim()) {
+      setAssetDetails({});
+      return;
+    }
+
+    setIsLoadingAsset(true);
+    try {
+      const token = getAuthToken();
+      
+      if (!token) {
+        setError('Please log in to fetch asset details');
+        return;
+      }
+
+      const response = await fetch(`${API_ENDPOINTS.INSPECTIONS.BASE}/asset/${assetId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const asset = await response.json();
+        setAssetDetails({
+          type: asset.type,
+          location: asset.location,
+          health_score: asset.health_score,
+          vendor_name: asset.vendor_name,
+          status: asset.status,
+          condition: asset.condition
+        });
+        
+        // Auto-fill location if not already filled
+        if (asset.location && !formData.location) {
+          setFormData(prev => ({ ...prev, location: asset.location }));
+        }
+      } else {
+        setAssetDetails({});
+        if (response.status === 404) {
+          setError(`Asset ${assetId} not found`);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching asset details:', error);
+      setAssetDetails({});
+    } finally {
+      setIsLoadingAsset(false);
+    }
+  };
+
+  // Handle asset ID input change with debouncing
+  const handleAssetIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, asset_id: value });
+    
+    // Clear previous error when user starts typing
+    if (error && error.includes('Asset')) {
+      setError(null);
+    }
+    
+    // Debounce asset fetching
+    const timeoutId = setTimeout(() => {
+      fetchAssetDetails(value);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   };
 
   const handleCreateInspection = async (e: React.FormEvent) => {
@@ -494,42 +575,95 @@ export default function InspectionsPage() {
         ))}
       </div>
 
-      {/* Create Inspection Modal */}
+      {/* Enhanced Inspection Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-block bg-opacity-25 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-25 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold text-gray-900">New Inspection</h2>
-              <p className="text-sm text-gray-600 mt-1">Create a new rail component inspection</p>
+              <h2 className="text-xl font-semibold text-gray-900">AI-Powered Asset Inspection</h2>
+              <p className="text-sm text-gray-600 mt-1">Create an inspection with automatic health score analysis</p>
             </div>
 
-            <form onSubmit={handleCreateInspection} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Asset ID
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.asset_id}
-                  onChange={(e) => setFormData({...formData, asset_id: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., AST-001"
-                />
-              </div>
+            <form onSubmit={handleCreateInspection} className="p-6 space-y-6">
+              {/* Asset Information Section */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Asset Information
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset ID *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.asset_id}
+                      onChange={handleAssetIdChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., AST-001"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Track Section A-1"
-                />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset Type
+                    </label>
+                    <input
+                      type="text"
+                      value={isLoadingAsset ? 'Loading...' : (assetDetails.type || 'Enter Asset ID above')}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600"
+                      disabled
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={assetDetails.location || formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., Track Section A-1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Health Score
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={isLoadingAsset ? 'Loading...' : (assetDetails.health_score ? `${assetDetails.health_score}%` : 'Enter Asset ID above')}
+                        className="flex-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600"
+                        disabled
+                      />
+                      {assetDetails.health_score && (
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${
+                          assetDetails.health_score >= 70 ? 'bg-green-100 text-green-800' :
+                          assetDetails.health_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {assetDetails.health_score >= 70 ? 'Good' :
+                           assetDetails.health_score >= 40 ? 'Fair' : 'Poor'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {assetDetails.vendor_name && (
+                  <div className="text-sm text-gray-600">
+                    <strong>Vendor:</strong> {assetDetails.vendor_name} | 
+                    <strong> Status:</strong> {assetDetails.status} | 
+                    <strong> Condition:</strong> {assetDetails.condition}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -602,6 +736,7 @@ export default function InspectionsPage() {
                     setShowCreateForm(false);
                     setSelectedImage(null);
                     setFormData({ asset_id: '', location: '', inspection_type: 'visual', notes: '' });
+                    setAssetDetails({});
                     setError(null);
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
