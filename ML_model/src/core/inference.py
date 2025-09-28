@@ -123,6 +123,31 @@ class RailwayDefectDetector:
                 "confidence": None
             }
     
+    def predict_single_image(self, image_path: str) -> Dict:
+        """
+        Predict defects for a single image (alias for predict method with formatted output)
+        
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Dictionary with prediction results in test-friendly format
+        """
+        result = self.predict(image_path)
+        
+        if result["status"] == "success":
+            # Format for test compatibility
+            formatted_result = {
+                "predicted_class": "Defective" if result["is_defective"] else "Non defective",
+                "confidence": result["confidence"],
+                "prediction": result["prediction_score"],
+                "threshold": result["threshold"],
+                "status": result["status"]
+            }
+            return formatted_result
+        else:
+            return result
+    
     def predict_batch(self, image_paths: list) -> list:
         """
         Predict multiple images at once
