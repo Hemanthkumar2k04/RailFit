@@ -1,11 +1,14 @@
--- RailFit Asset Management Database Schema (Updated)
+-- RailFit Asset Management Database Schema with RUL Tracking
 -- Designed for Supabase PostgreSQL
 -- Created: September 2025
+-- Updated: Added Remaining Useful Life (RUL) tracking system
 
--- Disable Row Level Security (RLS) for all tables
--- Note: In production, consider enabling RLS for better security
+-- ===========================================================================
+-- CORE SCHEMA SETUP
+-- ===========================================================================
 
 -- Drop tables if they exist (for clean reinstall)
+DROP TABLE IF EXISTS asset_rul CASCADE;
 DROP TABLE IF EXISTS photos CASCADE;
 DROP TABLE IF EXISTS api_integrations CASCADE;
 DROP TABLE IF EXISTS alerts CASCADE;
@@ -46,13 +49,15 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. VENDORS TABLE
+-- 2. VENDORS TABLE (Enhanced with RUL parameters)
 CREATE TABLE vendors (
     vendor_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     contact_info JSONB, -- Flexible JSON structure for various contact details
     warranty_terms TEXT,
     certifications TEXT[],
+    degradation_rate DECIMAL(5,4) DEFAULT 0.0100, -- Daily degradation rate (1% default)
+    average_life_span_days INTEGER DEFAULT 3650, -- Average asset lifespan in days (10 years default)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -225,148 +230,316 @@ LEFT JOIN inspections i ON a.asset_id = i.asset_id
 LEFT JOIN alerts al ON a.asset_id = al.asset_id AND al.acknowledged_at IS NULL
 GROUP BY a.asset_id, a.type, a.location, a.status, a.condition, a.health_score, a.predicted_rul, v.name;
 
--- Grant permissions (adjust as needed for your Supabase setup)
--- These permissions ensure the app can read/write to all tables
+-- ===========================================================================
+-- RUL (REMAINING USEFUL LIFE) TRACKING SYSTEM
+-- ===========================================================================
+
+-- 8. ASSET_RUL TABLE
+CREATE TABLE asset_rul (
+    rul_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id UUID NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
+    current_health_score DECIMAL(5,2) NOT NULL CHECK (current_health_score >= 0 AND current_health_score <= 100),
+    degradation_rate DECIMAL(5,4) NOT NULL DEFAULT 0.0100, -- Daily degradation rate
+    predicted_rul_days INTEGER NOT NULL DEFAULT 0, -- Remaining useful life in days
+    confidence_level DECIMAL(3,2) DEFAULT 0.85, -- Confidence in prediction (0-1)
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    calculation_method VARCHAR(50) DEFAULT 'linear', -- 'linear', 'exponential', 'ml_model'
+    
+    -- Ensure unique constraint per asset
+    CONSTRAINT unique_asset_rul UNIQUE (asset_id)
+);
+
+-- ===========================================================================
+-- RUL CALCULATION FUNCTIONS
+-- ===========================================================================
+
+-- Function to calculate RUL using linear degradation model
+CREATE OR REPLACE FUNCTION calculate_rul_linear(
+    health_score DECIMAL(5,2),
+    degradation_rate DECIMAL(5,4)
+) RETURNS INTEGER AS $$
+BEGIN
+    -- Linear RUL calculation: RUL = health_score / degradation_rate
+    IF health_score <= 0 OR degradation_rate <= 0 THEN
+        RETURN 0;
+    END IF;
+    
+    -- Calculate days until health score reaches 0
+    RETURN FLOOR(health_score / degradation_rate);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to calculate RUL with exponential degradation
+CREATE OR REPLACE FUNCTION calculate_rul_exponential(
+    health_score DECIMAL(5,2),
+    degradation_rate DECIMAL(5,4),
+    threshold DECIMAL(5,2) DEFAULT 20.0
+) RETURNS INTEGER AS $$
+DECLARE
+    days_to_threshold INTEGER;
+BEGIN
+    -- Exponential decay model
+    IF health_score <= threshold OR degradation_rate <= 0 THEN
+        RETURN 0;
+    END IF;
+    
+    days_to_threshold := FLOOR(LN(health_score / threshold) / degradation_rate);
+    RETURN GREATEST(0, days_to_threshold);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to update RUL for a specific asset
+CREATE OR REPLACE FUNCTION update_asset_rul(asset_uuid UUID) RETURNS VOID AS $$
+DECLARE
+    asset_health DECIMAL(5,2);
+    vendor_degradation_rate DECIMAL(5,4);
+    calculated_rul INTEGER;
+BEGIN
+    -- Get current health score and degradation rate
+    SELECT a.health_score, COALESCE(v.degradation_rate, 0.0100)
+    INTO asset_health, vendor_degradation_rate
+    FROM assets a
+    LEFT JOIN vendors v ON a.vendor_id = v.vendor_id
+    WHERE a.asset_id = asset_uuid;
+    
+    -- Skip if asset not found or no health score
+    IF asset_health IS NULL THEN
+        RETURN;
+    END IF;
+    
+    -- Calculate RUL using linear model
+    calculated_rul := calculate_rul_linear(asset_health, vendor_degradation_rate);
+    
+    -- Insert or update asset_rul table
+    INSERT INTO asset_rul (
+        asset_id, 
+        current_health_score, 
+        degradation_rate, 
+        predicted_rul_days,
+        last_updated
+    ) VALUES (
+        asset_uuid, 
+        asset_health, 
+        vendor_degradation_rate, 
+        calculated_rul,
+        CURRENT_TIMESTAMP
+    )
+    ON CONFLICT (asset_id) DO UPDATE SET
+        current_health_score = EXCLUDED.current_health_score,
+        degradation_rate = EXCLUDED.degradation_rate,
+        predicted_rul_days = EXCLUDED.predicted_rul_days,
+        last_updated = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to update RUL for all assets
+CREATE OR REPLACE FUNCTION update_all_asset_rul() RETURNS INTEGER AS $$
+DECLARE
+    asset_record RECORD;
+    updated_count INTEGER := 0;
+BEGIN
+    FOR asset_record IN SELECT asset_id FROM assets WHERE health_score IS NOT NULL LOOP
+        PERFORM update_asset_rul(asset_record.asset_id);
+        updated_count := updated_count + 1;
+    END LOOP;
+    
+    RETURN updated_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function for trigger to automatically update RUL when asset health changes
+CREATE OR REPLACE FUNCTION trigger_update_asset_rul() RETURNS TRIGGER AS $$
+BEGIN
+    -- Update RUL when health_score changes
+    IF OLD.health_score IS DISTINCT FROM NEW.health_score THEN
+        PERFORM update_asset_rul(NEW.asset_id);
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger on assets table
+CREATE TRIGGER assets_health_score_update_trigger
+    AFTER UPDATE ON assets
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_update_asset_rul();
+
+-- ===========================================================================
+-- ENHANCED VIEWS WITH RUL INTEGRATION
+-- ===========================================================================
+
+-- Enhanced asset summary with RUL information
+CREATE OR REPLACE VIEW asset_health_rul_summary AS
+SELECT 
+    a.asset_id,
+    a.type,
+    a.location,
+    a.status,
+    a.condition,
+    a.health_score,
+    ar.predicted_rul_days,
+    ar.degradation_rate,
+    ar.confidence_level,
+    ar.last_updated as rul_last_calculated,
+    v.name as vendor_name,
+    v.average_life_span_days,
+    
+    -- RUL categories for easy filtering
+    CASE 
+        WHEN ar.predicted_rul_days <= 30 THEN 'Critical (≤30 days)'
+        WHEN ar.predicted_rul_days <= 90 THEN 'Warning (≤90 days)'
+        WHEN ar.predicted_rul_days <= 365 THEN 'Monitor (≤1 year)'
+        ELSE 'Good (>1 year)'
+    END as rul_category,
+    
+    -- Maintenance priority based on RUL and health score
+    CASE 
+        WHEN ar.predicted_rul_days <= 30 OR a.health_score <= 20 THEN 'Immediate'
+        WHEN ar.predicted_rul_days <= 90 OR a.health_score <= 40 THEN 'High'
+        WHEN ar.predicted_rul_days <= 365 OR a.health_score <= 60 THEN 'Medium'
+        ELSE 'Low'
+    END as maintenance_priority,
+    
+    -- Calculate utilization percentage
+    ROUND(
+        ((v.average_life_span_days - ar.predicted_rul_days) * 100.0 / v.average_life_span_days), 
+        2
+    ) as utilization_percentage,
+    
+    COUNT(i.inspection_id) AS total_inspections,
+    MAX(i.inspection_date) AS last_inspection_date,
+    COUNT(al.alert_id) AS active_alerts
+    
+FROM assets a
+LEFT JOIN asset_rul ar ON a.asset_id = ar.asset_id
+LEFT JOIN vendors v ON a.vendor_id = v.vendor_id
+LEFT JOIN inspections i ON a.asset_id = i.asset_id
+LEFT JOIN alerts al ON a.asset_id = al.asset_id AND al.acknowledged_at IS NULL
+WHERE a.health_score IS NOT NULL
+GROUP BY a.asset_id, a.type, a.location, a.status, a.condition, a.health_score, 
+         ar.predicted_rul_days, ar.degradation_rate, ar.confidence_level, 
+         ar.last_updated, v.name, v.average_life_span_days
+ORDER BY ar.predicted_rul_days ASC;
+
+-- RUL analytics view
+CREATE OR REPLACE VIEW rul_analytics AS
+SELECT 
+    COUNT(*) as total_assets_tracked,
+    COUNT(CASE WHEN predicted_rul_days <= 30 THEN 1 END) as critical_assets,
+    COUNT(CASE WHEN predicted_rul_days <= 90 THEN 1 END) as warning_assets,
+    COUNT(CASE WHEN predicted_rul_days <= 365 THEN 1 END) as monitor_assets,
+    ROUND(AVG(predicted_rul_days), 0) as average_rul_days,
+    ROUND(AVG(current_health_score), 2) as average_health_score,
+    ROUND(AVG(confidence_level), 2) as average_confidence,
+    MAX(last_updated) as last_calculation_time
+FROM asset_rul;
+
+-- ===========================================================================
+-- SAMPLE DATA AND INITIALIZATION
+-- ===========================================================================
+
+-- Insert demo users
+INSERT INTO users (name, email, password_hash, role) VALUES 
+('System Administrator', 'admin@railfit.com', '$2b$12$Zsyxb.cHRE/gyrDSVyB9VeRaVwj71iH51x1h3WCmmXOe0kOQbo1Aa', 'admin'),
+('Railway Manager', 'manager@railfit.com', '$2b$12$/cHgpBhjZb.0Of5aRxHiwOLDtQMHjfRUUCXZFXipEe6Y4eWEuV2Qq', 'manager'),
+('Field Inspector', 'inspector@railfit.com', '$2b$12$gavADr5MfW788rjt/oTd2eU0XuqG94F6HMTKLPohpn3UyExkoa.BS', 'field_inspector');
+
+-- Insert sample vendors with RUL parameters
+INSERT INTO vendors (name, contact_info, warranty_terms, degradation_rate, average_life_span_days) VALUES 
+('RailTech Industries', '{"phone": "+1-555-0101", "email": "contact@railtech.com"}', '24 months standard warranty', 0.0080, 4000),
+('TrackMaster Corp', '{"phone": "+1-555-0102", "email": "sales@trackmaster.com"}', '36 months extended warranty', 0.0120, 3200),
+('ClipCorp Solutions', '{"phone": "+1-555-0103", "email": "info@clipcorp.com"}', '18 months warranty', 0.0100, 3650),
+('PadTech Industries', '{"phone": "+1-555-0104", "email": "support@padtech.com"}', '30 months warranty', 0.0090, 3800);
+
+-- Insert sample assets with health scores
+INSERT INTO assets (type, vendor_id, location, health_score, status, condition, install_date) VALUES 
+('Rail Pad', (SELECT vendor_id FROM vendors WHERE name = 'RailTech Industries' LIMIT 1), 'Track Section A-1 Mile 10', 85, 'active', 'good', '2022-01-15'),
+('Elastic Rail Clip', (SELECT vendor_id FROM vendors WHERE name = 'TrackMaster Corp' LIMIT 1), 'Junction Point B-3 Platform 2', 65, 'active', 'ok', '2021-06-20'),
+('Sleeper', (SELECT vendor_id FROM vendors WHERE name = 'ClipCorp Solutions' LIMIT 1), 'Bridge Section C-2 Span 1', 45, 'under_maintenance', 'ok', '2020-03-10'),
+('Liner', (SELECT vendor_id FROM vendors WHERE name = 'PadTech Industries' LIMIT 1), 'Tunnel Entrance D-4', 25, 'active', 'critical', '2019-11-05'),
+('Rail Pad', (SELECT vendor_id FROM vendors WHERE name = 'RailTech Industries' LIMIT 1), 'Station Platform E-1', 90, 'active', 'excellent', '2023-02-28');
+
+-- Calculate initial RUL for all assets
+SELECT update_all_asset_rul() as initial_rul_calculations;
+
+-- Create indexes for better query performance
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_assets_type ON assets(type);
+CREATE INDEX idx_assets_status ON assets(status);
+CREATE INDEX idx_assets_condition ON assets(condition);
+CREATE INDEX idx_assets_vendor ON assets(vendor_id);
+CREATE INDEX idx_assets_location ON assets USING GIN(to_tsvector('english', location));
+CREATE INDEX idx_assets_gps ON assets(gps_lat, gps_lng);
+CREATE INDEX idx_inspections_asset ON inspections(asset_id);
+CREATE INDEX idx_inspections_inspector ON inspections(inspector_id);
+CREATE INDEX idx_inspections_date ON inspections(inspection_date);
+CREATE INDEX idx_alerts_asset ON alerts(asset_id);
+CREATE INDEX idx_alerts_priority ON alerts(priority);
+CREATE INDEX idx_alerts_acknowledged ON alerts(acknowledged_at);
+CREATE INDEX idx_api_integrations_asset ON api_integrations(asset_id);
+CREATE INDEX idx_api_integrations_system ON api_integrations(system);
+CREATE INDEX idx_photos_asset ON photos(asset_id);
+CREATE INDEX idx_photos_inspection ON photos(inspection_id);
+CREATE INDEX idx_asset_rul_asset_id ON asset_rul(asset_id);
+CREATE INDEX idx_asset_rul_predicted_rul ON asset_rul(predicted_rul_days);
+CREATE INDEX idx_asset_rul_last_updated ON asset_rul(last_updated);
+
+-- Add updated_at triggers to relevant tables
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_vendors_updated_at BEFORE UPDATE ON vendors
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_assets_updated_at BEFORE UPDATE ON assets
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_inspections_updated_at BEFORE UPDATE ON inspections
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_asset_rul_updated_at BEFORE UPDATE ON asset_rul
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Disable RLS (Row Level Security) for all tables
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE vendors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE assets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE inspections DISABLE ROW LEVEL SECURITY;
+ALTER TABLE alerts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE api_integrations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE photos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE asset_rul DISABLE ROW LEVEL SECURITY;
+
+-- Grant permissions
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
--- Success message
-SELECT 'RailFit database schema updated successfully! New enums: asset_condition (excellent, good, ok, critical) and asset_status (active, under_maintenance, retired)' as status;
+-- ===========================================================================
+-- SUCCESS MESSAGE AND TESTING
+-- ===========================================================================
 
-
--- Create inspections table in Supabase
--- Run this SQL in your Supabase SQL editor
-
-CREATE TABLE inspections (
-  inspection_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  asset_id VARCHAR(255) NOT NULL,
-  inspector_id UUID NOT NULL,
-  inspector_name VARCHAR(255) NOT NULL,
-  location VARCHAR(255) NOT NULL,
-  inspection_date TIMESTAMPTZ NOT NULL DEFAULT now(),
-  inspection_type VARCHAR(50) NOT NULL DEFAULT 'visual',
-  result VARCHAR(50) NOT NULL,
-  confidence_score DECIMAL(3,2), -- Values between 0.00 and 1.00
-  notes TEXT,
-  image_data TEXT, -- Base64 encoded image data
-  ai_prediction JSONB, -- Store AI prediction results as JSON
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  
-  -- Foreign key constraint (assuming you have a users table)
-  CONSTRAINT fk_inspector_id FOREIGN KEY (inspector_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
--- Create indexes for better performance
-CREATE INDEX idx_inspections_asset_id ON inspections(asset_id);
-CREATE INDEX idx_inspections_inspector_id ON inspections(inspector_id);
-CREATE INDEX idx_inspections_result ON inspections(result);
-CREATE INDEX idx_inspections_date ON inspections(inspection_date);
-CREATE INDEX idx_inspections_created_at ON inspections(created_at);
-
--- Create RLS (Row Level Security) policies
-ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
-
--- Policy: All authenticated users can read inspections
-CREATE POLICY "Allow authenticated users to read inspections" ON inspections
-  FOR SELECT TO authenticated
-  USING (true);
-
--- Policy: All authenticated users can create inspections
-CREATE POLICY "Allow authenticated users to create inspections" ON inspections
-  FOR INSERT TO authenticated
-  WITH CHECK (true);
-
--- Policy: Users can update their own inspections
-CREATE POLICY "Allow users to update own inspections" ON inspections
-  FOR UPDATE TO authenticated
-  USING (inspector_id = auth.uid());
-
--- Policy: Only admin and managers can delete inspections
-CREATE POLICY "Allow admin/manager to delete inspections" ON inspections
-  FOR DELETE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.user_id = auth.uid() 
-      AND users.role IN ('admin', 'manager')
-    )
-  );
-
--- Create trigger to automatically update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_inspections_updated_at 
-  BEFORE UPDATE ON inspections 
-  FOR EACH ROW 
-  EXECUTE FUNCTION update_updated_at_column();
-
--- Insert some sample data for testing
-INSERT INTO inspections (
-  asset_id,
-  inspector_id,
-  inspector_name,
-  location,
-  inspection_type,
-  result,
-  confidence_score,
-  notes,
-  ai_prediction
-) VALUES 
-(
-  'AST-001',
-  (SELECT user_id FROM users WHERE email = 'admin@railfit.com' LIMIT 1),
-  'Admin User',
-  'Track Section A-1',
-  'ai_assisted',
-  'Defective',
-  0.87,
-  'Visible crack detected on rail joint',
-  '{"prediction": "Defective", "confidence": 0.87, "defect_probability": 0.87}'::jsonb
-),
-(
-  'AST-002',
-  (SELECT user_id FROM users WHERE email = 'inspector@railfit.com' LIMIT 1),
-  'Inspector User',
-  'Junction Point B-3',
-  'visual',
-  'Non-Defective',
-  0.92,
-  'All components within normal parameters',
-  '{"prediction": "Non-Defective", "confidence": 0.92, "defect_probability": 0.08}'::jsonb
-),
-(
-  'AST-003',
-  (SELECT user_id FROM users WHERE email = 'manager@railfit.com' LIMIT 1),
-  'Manager User',
-  'Bridge Section C-2',
-  'detailed',
-  'Non-Defective',
-  0.78,
-  'Minor wear observed but within acceptable limits',
-  '{"prediction": "Non-Defective", "confidence": 0.78, "defect_probability": 0.22}'::jsonb
-);
-
--- Create view for inspection analytics
-CREATE OR REPLACE VIEW inspection_analytics AS
 SELECT 
-  COUNT(*) as total_inspections,
-  COUNT(CASE WHEN result = 'Defective' THEN 1 END) as defective_count,
-  COUNT(CASE WHEN result = 'Non-Defective' THEN 1 END) as non_defective_count,
-  ROUND(
-    (COUNT(CASE WHEN result = 'Defective' THEN 1 END) * 100.0 / COUNT(*)), 
-    2
-  ) as defect_rate,
-  ROUND(AVG(confidence_score), 2) as average_confidence,
-  COUNT(CASE WHEN inspection_date >= NOW() - INTERVAL '7 days' THEN 1 END) as recent_inspections_count
-FROM inspections
-WHERE created_at >= NOW() - INTERVAL '1 year'; -- Only count inspections from last year
+    'RailFit Database Schema with RUL Tracking System deployed successfully!' as status,
+    'Features implemented:' as features_title,
+    'Core Tables: users, vendors, assets, inspections, alerts, api_integrations, photos' as core_tables,
+    'RUL System: asset_rul table with automatic calculations' as rul_system,
+    'Functions: calculate_rul_linear(), calculate_rul_exponential(), update_asset_rul()' as functions,
+    'Views: asset_health_rul_summary, rul_analytics' as views,
+    'Triggers: Automatic RUL updates when health_score changes' as triggers;
+
+-- Display sample RUL data
+SELECT 'Sample RUL Calculations:' as sample_title;
+SELECT 
+    type,
+    location,
+    health_score,
+    predicted_rul_days,
+    rul_category,
+    maintenance_priority
+FROM asset_health_rul_summary 
+LIMIT 5;
