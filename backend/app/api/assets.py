@@ -6,7 +6,7 @@ from app.core.security import verify_token
 import httpx
 import uuid
 import json
-import qrcode
+import qrcode  # Using ERROR_CORRECT_H for high fault tolerance
 import io
 import base64
 import csv
@@ -473,10 +473,10 @@ async def generate_asset_qr_code(
                     # Generate QR code
                     qr_json = json.dumps(qr_data, indent=None, separators=(',', ':'))
                     
-                    # Create QR code instance
+                    # Create QR code instance with High error correction (Type H)
                     qr = qrcode.QRCode(
                         version=1,
-                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        error_correction=qrcode.constants.ERROR_CORRECT_H,  # High fault tolerance
                         box_size=10,
                         border=4,
                     )

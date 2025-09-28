@@ -5,7 +5,7 @@ from app.schemas.asset import AssetCreate, AssetUpdate
 from typing import List, Optional
 import uuid
 from datetime import datetime
-import qrcode
+import qrcode  # Using ERROR_CORRECT_H for high fault tolerance
 import io
 import base64
 
@@ -23,10 +23,10 @@ class AssetService:
             # Create QR code with asset information
             qr_data = f"https://railfit.app/assets/{asset_id}"
             
-            # Generate QR code
+            # Generate QR code with High error correction (Type H)
             qr = qrcode.QRCode(
                 version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,  # High fault tolerance
                 box_size=10,
                 border=4,
             )
