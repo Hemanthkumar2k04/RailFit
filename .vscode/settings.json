@@ -12,5 +12,6 @@
             "args": ["-ExecutionPolicy", "Bypass"]
         }
     },
-    "python.envFile": "${workspaceFolder}/.env"
+    "python.envFile": "${workspaceFolder}/.env",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
