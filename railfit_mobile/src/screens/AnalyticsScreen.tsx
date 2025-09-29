@@ -807,7 +807,7 @@ export default function AnalyticsScreen() {
 
             {isAnalyzing ? (
               <View style={styles.analyzingContainer}>
-                <ActivityIndicator size="large" color={Colors.primary} />
+                <ActivityIndicator size="large" color={Colors.primary.main} />
                 <Text style={styles.analyzingText}>Analyzing image with AI...</Text>
                 <Text style={styles.analyzingSubtext}>Detecting wear patterns, corrosion, and predicting RUL</Text>
               </View>

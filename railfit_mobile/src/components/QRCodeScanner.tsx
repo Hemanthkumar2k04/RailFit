@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.xl,
   },
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primary.main,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.base,
     borderRadius: Spacing.borderRadius.md,

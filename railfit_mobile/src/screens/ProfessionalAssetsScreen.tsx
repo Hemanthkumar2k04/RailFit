@@ -12,7 +12,10 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import FilterDropdown from '../components/FilterDropdown';
+import QRCodeModal from '../components/QRCodeModal';
+import AssetDetailsModal from '../components/AssetDetailsModal';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -42,6 +45,11 @@ const AssetsScreen: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [selectedAssetForQR, setSelectedAssetForQR] = useState<any>(null);
+  const [assetDetailsVisible, setAssetDetailsVisible] = useState(false);
+  const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<any>(null);
 
   const typeOptions = ['All Types', 'Rail Pad', 'Liner', 'Sleeper', 'Elastic Rail Clip'];
   const statusOptions = ['All Status', 'Active', 'Inactive', 'Maintenance'];
@@ -129,6 +137,52 @@ const AssetsScreen: React.FC = () => {
     }
   };
 
+  const handleViewQR = (asset: Asset) => {
+    const qrAssetData = {
+      id: asset.id,
+      type: asset.type,
+      location: asset.location,
+      status: asset.status,
+      healthScore: asset.healthScore,
+      predictedRUL: 120, // Mock data
+      lastInspection: '2024-08-15',
+      nextMaintenance: '2024-11-15',
+      qrVersion: '1.0',
+    };
+    setSelectedAssetForQR(qrAssetData);
+    setQrModalVisible(true);
+  };
+
+  const handleViewAsset = (asset: Asset) => {
+    const assetDetailsData = {
+      id: asset.id,
+      type: asset.type,
+      location: asset.location,
+      status: asset.status,
+      healthScore: asset.healthScore,
+      condition: asset.condition,
+      installDate: asset.installDate,
+      lastInspection: '2024-08-15',
+      nextMaintenance: '2024-11-15',
+      vendor: {
+        name: 'TrackMaster Corp',
+        id: '1c52948-af6ae-4234-864f-4f4bb4816410',
+        email: 'sales@trackmaster.com',
+        phone: '+1 555-0192',
+        address: '456 Track Street, Metro City',
+        status: 'Active',
+      },
+      specifications: {
+        model: 'Express-Pro',
+        serialNumber: 'RP-984',
+        manufacturer: 'PadTech',
+        description: 'High-speed rail pad for express train operations',
+      },
+    };
+    setSelectedAssetForDetails(assetDetailsData);
+    setAssetDetailsVisible(true);
+  };
+
   const renderSummaryCard = (title: string, value: number, subtitle: string, color: string, icon: string) => (
     <View style={[styles.summaryCard, { borderLeftColor: color }]}>
       <View style={styles.summaryHeader}>
@@ -176,17 +230,17 @@ const AssetsScreen: React.FC = () => {
       <Text style={styles.installDate}>{item.installDate}</Text>
       
       <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('View', `Viewing asset ${item.id}`)}>
-          <Text style={styles.actionIcon}>👁</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleViewAsset(item)}>
+          <Ionicons name="eye-outline" size={16} color="#6b7280" />
           <Text style={styles.actionText}>View</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('QR Code', `QR Code for ${item.id}`)}>
-          <Text style={styles.actionIcon}>📱</Text>
-          <Text style={styles.actionText}>View QR</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleViewQR(item)}>
+          <Ionicons name="qr-code-outline" size={16} color="#6b7280" />
+          <Text style={styles.actionText}>QR Code</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Download', `Downloading ${item.id}`)}>
-          <Text style={styles.actionIcon}>⬇</Text>
-          <Text style={styles.actionText}>Download</Text>
+          <Ionicons name="download-outline" size={16} color="#6b7280" />
+          <Text style={styles.actionText}>Export</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -238,69 +292,177 @@ const AssetsScreen: React.FC = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Asset Management</Text>
-          <Text style={styles.headerSubtitle}>Comprehensive railway infrastructure asset tracking and management</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>+ Add New Asset</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtnSecondary}>
-            <Text style={styles.actionBtnSecondaryText}>⬆ Bulk Import</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtnSecondary}>
-            <Text style={styles.actionBtnSecondaryText}>📊 Generate Reports</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtnSecondary}>
-            <Text style={styles.actionBtnSecondaryText}>⬇ Export Data</Text>
-          </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>Asset Management</Text>
+            <Text style={styles.headerSubtitle}>Comprehensive railway infrastructure asset tracking and management</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.addButton}>
+              <Ionicons name="add" size={20} color="#ffffff" />
+              <Text style={styles.addButtonText}>Add New Asset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bulkImportButton}>
+              <Ionicons name="cloud-upload-outline" size={20} color="#374151" />
+              <Text style={styles.bulkImportText}>Bulk Import</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reportsButton}>
+              <Ionicons name="document-text-outline" size={20} color="#374151" />
+              <Text style={styles.reportsText}>Generate Reports</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.exportButton}>
+              <Ionicons name="download-outline" size={20} color="#374151" />
+              <Text style={styles.exportText}>Export Data</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Summary Cards */}
         <View style={styles.summaryContainer}>
-          {renderSummaryCard('Total Assets', summary.totalAssets, 'Real-time count', '#f59e0b', '📦')}
-          {renderSummaryCard('Active Assets', summary.activeAssets, 'Operational status', '#10b981', '✅')}
-          {renderSummaryCard('Maintenance Queue', summary.maintenanceQueue, 'Pending maintenance', '#f59e0b', '🔧')}
-          {renderSummaryCard('Critical Alerts', summary.criticalAlerts, 'Immediate attention', '#ef4444', '🚨')}
+          <View style={[styles.summaryCard, { borderLeftColor: '#d1d5db' }]}>
+            <View style={styles.summaryCardIcon}>
+              <Ionicons name="cube-outline" size={24} color="#9ca3af" />
+            </View>
+            <View style={styles.summaryCardContent}>
+              <Text style={styles.summaryCardLabel}>Total Assets</Text>
+              <Text style={styles.summaryCardValue}>51</Text>
+              <Text style={styles.summaryCardSubtext}>Real-time count</Text>
+            </View>
+          </View>
+
+          <View style={[styles.summaryCard, { borderLeftColor: '#10b981' }]}>
+            <View style={styles.summaryCardIcon}>
+              <Ionicons name="checkmark-circle-outline" size={24} color="#10b981" />
+            </View>
+            <View style={styles.summaryCardContent}>
+              <Text style={styles.summaryCardLabel}>Active Assets</Text>
+              <Text style={[styles.summaryCardValue, { color: '#10b981' }]}>48</Text>
+              <Text style={styles.summaryCardSubtext}>Operational status</Text>
+            </View>
+          </View>
+
+          <View style={[styles.summaryCard, { borderLeftColor: '#f59e0b' }]}>
+            <View style={styles.summaryCardIcon}>
+              <Ionicons name="time-outline" size={24} color="#f59e0b" />
+            </View>
+            <View style={styles.summaryCardContent}>
+              <Text style={styles.summaryCardLabel}>Maintenance Queue</Text>
+              <Text style={[styles.summaryCardValue, { color: '#f59e0b' }]}>3</Text>
+              <Text style={styles.summaryCardSubtext}>Pending maintenance</Text>
+            </View>
+          </View>
+
+          <View style={[styles.summaryCard, { borderLeftColor: '#ef4444' }]}>
+            <View style={styles.summaryCardIcon}>
+              <Ionicons name="alert-circle-outline" size={24} color="#ef4444" />
+            </View>
+            <View style={styles.summaryCardContent}>
+              <Text style={styles.summaryCardLabel}>Critical Alerts</Text>
+              <Text style={[styles.summaryCardValue, { color: '#ef4444' }]}>2</Text>
+              <Text style={styles.summaryCardSubtext}>Immediate attention</Text>
+            </View>
+          </View>
         </View>
 
         {/* Search and Filters */}
-        <View style={styles.filtersContainer}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search assets..."
-              placeholderTextColor="#9ca3af"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <TouchableOpacity style={styles.searchButton}>
-              <Text style={styles.searchButtonText}>Search</Text>
-            </TouchableOpacity>
+        <View style={styles.searchFilterSection}>
+          {/* Search Bar */}
+          <View style={styles.searchBarContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by asset ID, type, location..."
+                placeholderTextColor="#9ca3af"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchButton}>
+                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-          
-          <View style={styles.filtersRow}>
-            <FilterDropdown
-              label="Asset Type"
-              options={typeOptions}
-              selectedValue={selectedType}
-              onSelect={setSelectedType}
-            />
-            <FilterDropdown
-              label="Status"
-              options={statusOptions}
-              selectedValue={selectedStatus}
-              onSelect={setSelectedStatus}
-            />
-            <FilterDropdown
-              label="Condition"
-              options={conditionOptions}
-              selectedValue={selectedCondition}
-              onSelect={setSelectedCondition}
-            />
+
+          {/* Filters Row */}
+          <View style={styles.filtersContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScrollContent}>
+              <FilterDropdown
+                label="Status"
+                options={statusOptions}
+                selectedValue={selectedStatus}
+                onSelect={setSelectedStatus}
+              />
+              <FilterDropdown
+                label="Asset Type"
+                options={typeOptions}
+                selectedValue={selectedType}
+                onSelect={setSelectedType}
+              />
+              <FilterDropdown
+                label="Location"
+                options={conditionOptions}
+                selectedValue={selectedCondition}
+                onSelect={setSelectedCondition}
+              />
+              <TouchableOpacity style={styles.moreFiltersButton}>
+                <Ionicons name="options-outline" size={16} color="#6b7280" />
+                <Text style={styles.moreFiltersText}>More Filters</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          {/* Active Filters */}
+          {(selectedStatus !== 'All Status' || selectedType !== 'All Types' || selectedCondition !== 'All Conditions') && (
+            <View style={styles.activeFiltersContainer}>
+              <Text style={styles.activeFiltersLabel}>Active Filters:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.activeFiltersRow}>
+                  {selectedStatus !== 'All Status' && (
+                    <View style={styles.filterChip}>
+                      <Text style={styles.filterChipText}>Status: {selectedStatus}</Text>
+                      <TouchableOpacity onPress={() => setSelectedStatus('All Status')}>
+                        <Ionicons name="close" size={14} color="#6b7280" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {selectedType !== 'All Types' && (
+                    <View style={styles.filterChip}>
+                      <Text style={styles.filterChipText}>Type: {selectedType}</Text>
+                      <TouchableOpacity onPress={() => setSelectedType('All Types')}>
+                        <Ionicons name="close" size={14} color="#6b7280" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {selectedCondition !== 'All Conditions' && (
+                    <View style={styles.filterChip}>
+                      <Text style={styles.filterChipText}>Location: {selectedCondition}</Text>
+                      <TouchableOpacity onPress={() => setSelectedCondition('All Conditions')}>
+                        <Ionicons name="close" size={14} color="#6b7280" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <TouchableOpacity 
+                    style={styles.clearAllFiltersButton}
+                    onPress={() => {
+                      setSelectedStatus('All Status');
+                      setSelectedType('All Types');
+                      setSelectedCondition('All Conditions');
+                    }}
+                  >
+                    <Text style={styles.clearAllFiltersText}>Clear All</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.tableControlsContainer}>
+          <View style={styles.leftControls}>
             
             <View style={styles.viewToggle}>
               <TouchableOpacity
@@ -347,14 +509,14 @@ const AssetsScreen: React.FC = () => {
                 {selectedAssets.length === paginatedAssets.length && <Text style={styles.checkmark}>✓</Text>}
               </View>
             </TouchableOpacity>
-            <Text style={styles.columnHeader}>Asset ID</Text>
-            <Text style={styles.columnHeader}>Type</Text>
-            <Text style={styles.columnHeader}>Location</Text>
-            <Text style={styles.columnHeader}>Health Score</Text>
-            <Text style={styles.columnHeader}>Condition</Text>
-            <Text style={styles.columnHeader}>Status</Text>
-            <Text style={styles.columnHeader}>Install Date</Text>
-            <Text style={styles.columnHeader}>Actions</Text>
+            <Text style={[styles.columnHeader, { width: 80 }]}>Asset ID</Text>
+            <Text style={[styles.columnHeader, { width: 70 }]}>Type</Text>
+            <Text style={[styles.columnHeader, { width: 90 }]}>Location</Text>
+            <Text style={[styles.columnHeader, { width: 60, textAlign: 'center' }]}>Health</Text>
+            <Text style={[styles.columnHeader, { width: 80, textAlign: 'center' }]}>Condition</Text>
+            <Text style={[styles.columnHeader, { width: 70, textAlign: 'center' }]}>Status</Text>
+            <Text style={[styles.columnHeader, { width: 80, textAlign: 'center' }]}>Install Date</Text>
+            <Text style={[styles.columnHeader, { flex: 1, textAlign: 'right' }]}>Actions</Text>
           </View>
 
           {/* Asset Rows */}
@@ -370,6 +532,48 @@ const AssetsScreen: React.FC = () => {
         {/* Pagination */}
         {renderPagination()}
       </ScrollView>
+      
+      {/* QR Code Modal */}
+      {selectedAssetForQR && (
+        <QRCodeModal
+          visible={qrModalVisible}
+          onClose={() => {
+            setQrModalVisible(false);
+            setSelectedAssetForQR(null);
+          }}
+          assetData={selectedAssetForQR}
+        />
+      )}
+
+      {/* Asset Details Modal */}
+      {selectedAssetForDetails && (
+        <AssetDetailsModal
+          visible={assetDetailsVisible}
+          onClose={() => {
+            setAssetDetailsVisible(false);
+            setSelectedAssetForDetails(null);
+          }}
+          onEditAsset={() => {
+            Alert.alert('Edit Asset', `Editing asset ${selectedAssetForDetails.id}`);
+          }}
+          onGenerateQR={() => {
+            setAssetDetailsVisible(false);
+            setSelectedAssetForQR({
+              id: selectedAssetForDetails.id,
+              type: selectedAssetForDetails.type,
+              location: selectedAssetForDetails.location,
+              status: selectedAssetForDetails.status,
+              healthScore: selectedAssetForDetails.healthScore,
+              predictedRUL: 120,
+              lastInspection: '2024-08-15',
+              nextMaintenance: '2024-11-15',
+              qrVersion: '1.0',
+            });
+            setQrModalVisible(true);
+          }}
+          assetData={selectedAssetForDetails}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -409,11 +613,76 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 22,
   },
+  headerContent: {
+    flex: 1,
+  },
   headerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     alignItems: 'center',
     flexWrap: 'wrap',
+  },
+  addButton: {
+    backgroundColor: '#000000',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    gap: 8,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  bulkImportButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+  },
+  bulkImportText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  reportsButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+  },
+  reportsText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  exportButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+  },
+  exportText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
   },
   actionBtn: {
     backgroundColor: '#111827',
@@ -466,15 +735,17 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 20,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-    minHeight: 120,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 100,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -634,7 +905,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f9fafb',
-    minHeight: 64,
+    minHeight: 70,
+    backgroundColor: '#ffffff',
   },
   checkbox: {
     width: 24,
@@ -660,26 +932,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   assetId: {
-    flex: 1,
-    fontSize: 13,
+    width: 80,
+    fontSize: 12,
     color: '#111827',
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   assetType: {
-    flex: 1,
-    fontSize: 13,
+    width: 70,
+    fontSize: 12,
     color: '#4b5563',
     fontWeight: '500',
   },
   assetLocation: {
-    flex: 1.5,
-    fontSize: 13,
+    width: 90,
+    fontSize: 11,
     color: '#4b5563',
     fontWeight: '500',
+    lineHeight: 14,
   },
   healthScoreContainer: {
-    flex: 1,
+    width: 60,
     alignItems: 'center',
   },
   healthScoreBadge: {
@@ -696,7 +969,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   conditionContainer: {
-    flex: 1,
+    width: 80,
     alignItems: 'center',
   },
   conditionBadge: {
@@ -713,7 +986,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   statusContainer: {
-    flex: 1,
+    width: 70,
     alignItems: 'center',
   },
   statusBadge: {
@@ -731,16 +1004,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   installDate: {
-    flex: 1,
-    fontSize: 13,
+    width: 80,
+    fontSize: 11,
     color: '#4b5563',
     textAlign: 'center',
     fontWeight: '500',
   },
   actionsContainer: {
-    flex: 1.5,
+    flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
+    justifyContent: 'flex-end',
   },
   actionButton: {
     flexDirection: 'row',
@@ -877,6 +1151,141 @@ const styles = StyleSheet.create({
   },
   bulkActionTextDanger: {
     color: '#fecaca',
+  },
+  summaryCardIcon: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  summaryCardContent: {
+    flex: 1,
+  },
+  summaryCardLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  summaryCardValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  summaryCardSubtext: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '400',
+  },
+
+  // Search and Filter Styles
+  searchFilterSection: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  searchBarContainer: {
+    marginBottom: 16,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  clearSearchButton: {
+    padding: 4,
+  },
+  filtersScrollContent: {
+    paddingRight: 20,
+  },
+  moreFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    gap: 8,
+    marginLeft: 8,
+  },
+  moreFiltersText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  activeFiltersContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  activeFiltersLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: '#1e40af',
+    fontWeight: '500',
+  },
+  clearAllFiltersButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  clearAllFiltersText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  tableControlsContainer: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  leftControls: {
+    flex: 1,
   },
 });
 

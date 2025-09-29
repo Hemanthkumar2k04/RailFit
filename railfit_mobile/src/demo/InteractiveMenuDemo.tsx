@@ -83,7 +83,7 @@ export default function InteractiveMenuDemo({ navigation }: any) {
             <View style={styles.menuContainer}>
               <InteractiveMenu
                 items={railwayMenuItems}
-                accentColor={Colors.accent}
+                accentColor={Colors.accent.main}
                 onItemPress={handleMenuPress}
               />
             </View>
@@ -98,7 +98,7 @@ export default function InteractiveMenuDemo({ navigation }: any) {
             <View style={styles.menuContainer}>
               <InteractiveMenu
                 items={inspectionMenuItems}
-                accentColor={Colors.secondary}
+                accentColor={Colors.secondary.main}
                 onItemPress={(index, item) => console.log(`Inspection: ${item.label}`)}
               />
             </View>
@@ -112,7 +112,7 @@ export default function InteractiveMenuDemo({ navigation }: any) {
             </Text>
             <View style={styles.menuContainer}>
               <InteractiveMenu
-                accentColor={Colors.primary}
+                accentColor={Colors.primary.main}
               />
             </View>
           </View>
@@ -176,7 +176,7 @@ const FeatureItem = ({ icon, title, description }: {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.background.primary,
   },
   scrollView: {
     flex: 1,

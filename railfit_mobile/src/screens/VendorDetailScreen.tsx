@@ -235,7 +235,7 @@ export default function VendorDetailScreen({ assetId, vendorId, onClose }: Vendo
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={Colors.primary.main} />
           <Text style={styles.loadingText}>Loading details...</Text>
         </View>
       </SafeAreaView>
@@ -367,16 +367,16 @@ export default function VendorDetailScreen({ assetId, vendorId, onClose }: Vendo
               <Text style={styles.sectionTitle}>Quick Actions</Text>
               <View style={styles.actionGrid}>
                 <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
-                  <Ionicons name="call" size={24} color={Colors.primary} />
+                  <Ionicons name="call" size={24} color={Colors.primary.main} />
                   <Text style={styles.actionText}>Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton} onPress={handleEmail}>
-                  <Ionicons name="mail" size={24} color={Colors.primary} />
+                  <Ionicons name="mail" size={24} color={Colors.primary.main} />
                   <Text style={styles.actionText}>Email</Text>
                 </TouchableOpacity>
                 {vendorInfo?.website && (
                   <TouchableOpacity style={styles.actionButton} onPress={handleWebsite}>
-                    <Ionicons name="globe" size={24} color={Colors.primary} />
+                    <Ionicons name="globe" size={24} color={Colors.primary.main} />
                     <Text style={styles.actionText}>Website</Text>
                   </TouchableOpacity>
                 )}
@@ -417,7 +417,7 @@ const StatItem = ({ label, value }: { label: string; value?: string }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.border.light,
   },
   tab: {
     flex: 1,
@@ -482,14 +482,14 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: Colors.primary,
+    borderBottomColor: Colors.primary.main,
   },
   tabText: {
     ...Typography.textStyles.label,
     color: Colors.textSecondary,
   },
   activeTabText: {
-    color: Colors.primary,
+    color: Colors.primary.main,
     fontWeight: '600',
   },
   scrollView: {
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.textStyles.h2,
-    color: Colors.primary,
+    color: Colors.primary.main,
     marginBottom: Spacing.xs,
   },
   statLabel: {
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   maintenanceType: {
     ...Typography.textStyles.labelSmall,
-    color: Colors.accent,
+    color: Colors.accent.main,
     marginBottom: Spacing.xs,
   },
   maintenanceDescription: {
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   },
   maintenanceCost: {
     ...Typography.textStyles.label,
-    color: Colors.primary,
+    color: Colors.primary.main,
     fontWeight: '600',
   },
   actionGrid: {
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...Typography.textStyles.label,
-    color: Colors.primary,
+    color: Colors.primary.main,
     marginTop: Spacing.xs,
   },
   certificationContainer: {
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   certificationBadge: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.accent.main,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: Spacing.borderRadius.full,

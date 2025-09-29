@@ -20,7 +20,6 @@ import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import QRCodeScanner from '../components/QRCodeScanner';
-import AppHeader from '../components/AppHeader';
 import SharedSidebar from '../components/SharedSidebar';
 import { useSidebar } from '../hooks/useSidebar';
 
@@ -756,7 +755,13 @@ export default function AssetsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader title="Assets" onMenuPress={toggleSidebar} />
+      <View style={styles.topHeader}>
+        <TouchableOpacity style={styles.menuButton} onPress={toggleSidebar}>
+          <Ionicons name="menu" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.topHeaderTitle}>QR Asset Management</Text>
+        <View style={styles.headerSpacer} />
+      </View>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -1768,6 +1773,34 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     minHeight: '100%',
     flexGrow: 1,
+  },
+  topHeader: {
+    backgroundColor: '#1e40af',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  menuButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  topHeaderTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  headerSpacer: {
+    width: 40,
   },
   header: {
     backgroundColor: '#ffffff',
