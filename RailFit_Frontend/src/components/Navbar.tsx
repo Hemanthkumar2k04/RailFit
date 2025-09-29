@@ -12,14 +12,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useAuth } from "@/context/AuthContext"
 
 // Navigation links array to be used in both desktop and mobile menus
-const navigationLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/assets", label: "Assets" },
-  { href: "/inspections", label: "Inspections" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/alerts", label: "Alerts" },
+const allNavigationLinks = [
+  { href: "/dashboard", label: "Dashboard", page: "dashboard" },
+  { href: "/assets", label: "Assets", page: "assets" },
+  { href: "/inspections", label: "Inspections", page: "inspections" },
+  { href: "/analytics", label: "Analytics", page: "analytics" },
+  { href: "/alerts", label: "Alerts", page: "alerts" },
 ]
 
 interface NavbarProps {
@@ -27,6 +28,10 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onLogout }: NavbarProps) {
+  const { canAccessPage } = useAuth()
+  
+  // Filter navigation links based on user permissions
+  const navigationLinks = allNavigationLinks.filter(link => canAccessPage(link.page))
   return (
     <header className="border-b px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">

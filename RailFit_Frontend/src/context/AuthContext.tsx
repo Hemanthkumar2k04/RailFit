@@ -18,6 +18,7 @@ interface AuthContextType {
     register: (userData: RegisterData) => Promise<boolean>
     logout: () => void
     handleLogout: () => void
+    canAccessPage: (page: string) => boolean
 }
 
 interface RegisterData {
@@ -42,6 +43,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+
+    // Role-based page access control
+    const canAccessPage = (page: string): boolean => {
+        if (!user) return false
+        
+        // Inspectors cannot access assets, analytics, or alerts
+        if (user.role === 'field_inspector') {
+            const restrictedPages = ['assets', 'analytics', 'alerts']
+            return !restrictedPages.includes(page)
+        }
+        
+        // Admins and managers can access all pages
+        return true
+    }
 
     useEffect(() => {
         // Check if user is authenticated on app load
@@ -165,7 +180,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
-        handleLogout
+        handleLogout,
+        canAccessPage
     }
 
     return (

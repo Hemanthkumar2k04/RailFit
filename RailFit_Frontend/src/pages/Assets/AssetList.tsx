@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import QRCodeDisplay from '@/components/QRCodeDisplay'
@@ -494,6 +495,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
     isOpen: boolean
     onClose: () => void
 }) {
+    const { user } = useAuth()
     const [vendor, setVendor] = useState<Vendor | null>(null)
     const [vendorLoading, setVendorLoading] = useState(false)
     const [vendorError, setVendorError] = useState<string | null>(null)
@@ -591,7 +593,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b">
                     <div>
@@ -636,41 +638,44 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5" />
-                                    Health & Performance
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">Health Score</span>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="text-2xl font-bold">{asset.health_score || 'N/A'}</div>
-                                        <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
-                                            {getHealthStatus(asset.health_score)}
-                                        </Badge>
-                                    </div>
-                                    {asset.health_score && (
-                                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                            <div
-                                                className={`h-2 rounded-full transition-all duration-300 ${
-                                                    asset.health_score >= 90 ? 'bg-emerald-500' :
-                                                    asset.health_score >= 70 ? 'bg-slate-500' :
-                                                    asset.health_score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                                                }`}
-                                                style={{ width: `${asset.health_score}%` }}
-                                            />
+                        {/* Hide Health & Performance section for inspectors as it's system monitoring */}
+                        {user?.role !== 'field_inspector' && (
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5" />
+                                        Health & Performance
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Health Score</span>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <div className="text-2xl font-bold">{asset.health_score || 'N/A'}</div>
+                                            <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
+                                                {getHealthStatus(asset.health_score)}
+                                            </Badge>
                                         </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">Last Updated</span>
-                                    <p className="font-semibold">{formatDate(asset.updated_at)}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                        {asset.health_score && (
+                                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                                <div
+                                                    className={`h-2 rounded-full transition-all duration-300 ${
+                                                        asset.health_score >= 90 ? 'bg-emerald-500' :
+                                                        asset.health_score >= 70 ? 'bg-slate-500' :
+                                                        asset.health_score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                                    }`}
+                                                    style={{ width: `${asset.health_score}%` }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Last Updated</span>
+                                        <p className="font-semibold">{formatDate(asset.updated_at)}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card>
                             <CardHeader className="pb-3">
@@ -776,11 +781,11 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                                     {vendor.address && (
                                                         <p><span className="font-medium">Address:</span> {vendor.address}</p>
                                                     )}
-                                                    <p><span className="font-medium">Status:</span> 
+                                                    <div><span className="font-medium">Status:</span> 
                                                         <Badge className={vendor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                                                             {vendor.is_active ? 'Active' : 'Inactive'}
                                                         </Badge>
-                                                    </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -895,6 +900,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
 }
 
 export default function AssetList() {
+    const { user } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
     const [searchTerm, setSearchTerm] = useState('')
@@ -1308,18 +1314,21 @@ export default function AssetList() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-rose-400">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Critical Alerts</CardTitle>
-                        <AlertCircle className="h-5 w-5 text-rose-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-rose-600">
-                            {metrics?.criticalAssets ?? safeAssets.filter(a => a.condition === 'critical').length}
-                        </div>
-                        <p className="text-xs text-rose-600 mt-1">Immediate attention</p>
-                    </CardContent>
-                </Card>
+                {/* Hide Critical Alerts for inspectors */}
+                {user?.role !== 'field_inspector' && (
+                    <Card className="border-l-4 border-l-rose-400">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Critical Alerts</CardTitle>
+                            <AlertCircle className="h-5 w-5 text-rose-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold text-rose-600">
+                                {metrics?.criticalAssets ?? safeAssets.filter(a => a.condition === 'critical').length}
+                            </div>
+                            <p className="text-xs text-rose-600 mt-1">Immediate attention</p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Search and Filter Section */}
