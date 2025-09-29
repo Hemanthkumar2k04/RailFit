@@ -196,7 +196,7 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">Installed Assets</p>
                   <p className="text-2xl font-bold text-emerald-600">{dashboard.installedAssets.toLocaleString()}</p>
                   <div className="mt-2 space-y-1">
-                    <Progress value={operationalPercentage} className="h-2" />
+                    <Progress value={operationalPercentage} className="mt-2 h-1 [&>div]:bg-emerald-400" />
                     <Badge variant="secondary" className="text-xs">
                       {operationalPercentage}% Active
                     </Badge>
@@ -214,7 +214,7 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">Maintenance Queue</p>
                   <p className="text-2xl font-bold text-amber-600">{dashboard.maintenanceQueue}</p>
                   <div className="mt-2 space-y-1">
-                    <Progress value={maintenancePercentage} className="h-2" />
+                    <Progress value={maintenancePercentage} className="mt-2 h-1 [&>div]:bg-amber-400" />
                     <Badge variant="outline" className="text-xs">
                       {maintenancePercentage}% of fleet
                     </Badge>
@@ -311,7 +311,7 @@ export default function Dashboard() {
                       {formatNumber(dashboard.systemUptime, 2)}%
                     </div>
                     <div className="text-sm text-gray-600">System Uptime</div>
-                    <Progress value={dashboard.systemUptime} className="mt-2 h-1" />
+                    <Progress value={dashboard.systemUptime} className="mt-2 h-1 [&>div]:bg-emerald-400" />
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/20 border">
                     <div className="text-2xl font-bold text-slate-500">

@@ -22,6 +22,7 @@ export default function Alerts() {
   }, []);
 
   if (loading) return <div>Loading alerts...</div>;
+  console.log(API_ENDPOINTS.ALERTS.BASE);
 
   if (!alerts.length) return <div>No alerts.</div>;
 

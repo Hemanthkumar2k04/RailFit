@@ -20,7 +20,6 @@ const navigationLinks = [
   { href: "/inspections", label: "Inspections" },
   { href: "/analytics", label: "Analytics" },
   { href: "/alerts", label: "Alerts" },
-  { href: "/settings", label: "Settings" },
 ]
 
 interface NavbarProps {
