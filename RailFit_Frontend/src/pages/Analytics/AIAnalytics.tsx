@@ -5,30 +5,49 @@ import {
   ReferenceLine
 } from 'recharts';
 
-// Supabase Configuration
+// Supabase Configuration (kept inline for now)
 const SUPABASE_URL = 'https://nlxrpnjccouogrfbbgmk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5seHJwbmpjY291b2dyZmJiZ21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzM2NjQsImV4cCI6MjA3Mzk0OTY2NH0.begglCbsqiTX7Sop_09BpTRHw31NGm9nThoTkk4aEJE';
 
-// Type Definitions based on your actual database schema
-interface Asset {
-  asset_id: string;
-  type: string;
-  location: string;
-  health_score: number;
-  status: string;
-  condition: string;
+// Types
+interface GaugeData {
+  fleetHealth: number;
+  totalAssets: number;
+  excellentCount: number;
+  goodCount: number;
+  okCount: number;
+  criticalCount: number;
+}
+
+interface AssetRaw {
+  // allow various possible field names returned by backend
+  id?: string;
+  asset_id?: string;
+  assetId?: string;
+  type?: string;
+  asset_type?: string;
+  assetType?: string;
+  location?: string;
+  health_score?: number | string;
+  health?: number | string;
+  health_score_raw?: number | string;
+  predicted_rul_days?: number | string;
+  predicted_rul?: number | string;
+  rul_days?: number | string;
+  priority?: string;
+  maintenance_priority?: string;
+  alert_count?: number;
+  active_alerts?: number;
+  vendor_name?: string;
+  vendor?: string;
   gps_lat?: number;
   gps_lng?: number;
-  vendor_name?: string;
-  predicted_rul_days?: number;
-  maintenance_priority?: string;
-  rul_category?: string;
-  total_inspections?: number;
-  active_alerts?: number;
+  latitude?: number;
+  longitude?: number;
+  condition?: string;
+  created_at?: string;
+  updated_at?: string;
   utilization_percentage?: number;
-  install_date?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 interface RULDistribution {
@@ -49,7 +68,7 @@ interface ScatterData {
   priority: string;
   alertCount: number;
   vendor: string;
-  utilizationPercentage: number;
+  utilizationPercentage?: number;
 }
 
 interface HeatmapAsset {
@@ -61,32 +80,22 @@ interface HeatmapAsset {
   location: string;
   rulDays: number;
   priority: string;
-  condition: string;
-}
-
-interface GaugeData {
-  fleetHealth: number;
-  totalAssets: number;
-  excellentCount: number;
-  goodCount: number;
-  okCount: number;
-  criticalCount: number;
+  condition?: string;
 }
 
 interface RULAnalytics {
-  total_assets_tracked: number;
-  critical_assets: number;
-  warning_assets: number;
-  monitor_assets: number;
-  average_rul_days: number;
-  average_health_score: number;
-  average_confidence: number;
+  critical_assets?: number;
+  warning_assets?: number;
+  monitor_assets?: number;
+  average_rul_days?: number;
+  average_health_score?: number;
+  average_confidence?: number;
 }
 
-// Supabase API Helper
+// Supabase API helper (minimal)
 const supabaseApi = {
-  async getAssetHealthRulSummary(): Promise<Asset[]> {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/asset_health_rul_summary?select=*&order=predicted_rul_days.asc`, {
+  async getAssetHealthRulSummary(): Promise<AssetRaw[]> {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/asset_health_rul_summary?select=*`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -94,11 +103,8 @@ const supabaseApi = {
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
   },
 
   async getRulAnalytics(): Promise<RULAnalytics> {
@@ -110,10 +116,7 @@ const supabaseApi = {
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
     return data[0] || {};
   }
@@ -151,7 +154,7 @@ const GaugeChart: React.FC<{ data: GaugeData }> = ({ data }) => {
             <circle cx="100" cy="90" r="6" fill={getColor(data.fleetHealth)} />
           </svg>
         </div>
-        
+
         <div className="text-center mt-4">
           <div className="text-4xl font-bold" style={{ color: getColor(data.fleetHealth) }}>
             {data.fleetHealth.toFixed(1)}
@@ -316,7 +319,7 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
 
 // Main Dashboard Component
 const AIAnalytics: React.FC = () => {
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<AssetRaw[]>([]);
   const [rulAnalytics, setRulAnalytics] = useState<RULAnalytics>({} as RULAnalytics);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -354,7 +357,7 @@ const AIAnalytics: React.FC = () => {
     };
   }, []);
 
-  // Process data for charts
+  // Process data for charts (normalize incoming fields first)
   const processData = () => {
     if (assets.length === 0) {
       return {
@@ -365,90 +368,107 @@ const AIAnalytics: React.FC = () => {
           goodCount: 0,
           okCount: 0,
           criticalCount: 0
-        },
-        barData: [],
-        scatterData: [],
-        heatmapData: [],
-        lineChartData: []
+        } as GaugeData,
+        barData: [] as RULDistribution[],
+        scatterData: [] as ScatterData[],
+        heatmapData: [] as HeatmapAsset[],
+        lineChartData: [] as any[]
       };
     }
 
+    // normalize assets into a predictable shape
+    const normalized = assets.map(a => {
+      const healthRaw = a.health_score ?? a.health ?? a.health_score ?? 0;
+      const rulRaw = a.predicted_rul_days ?? a.predicted_rul ?? a.rul_days ?? 0;
+      const typeRaw = a.type ?? a.asset_type ?? a.assetType ?? 'Unknown';
+      const lat = (a.gps_lat ?? a.latitude ?? 0) as number;
+      const lng = (a.gps_lng ?? a.longitude ?? 0) as number;
+
+      const health = Number(healthRaw) || 0;
+      const rul = Number(rulRaw) || 0;
+
+      return {
+        ...a,
+        _health: health,
+        _rul: rul,
+        _type: typeRaw,
+        _lat: lat,
+        _lng: lng
+      } as AssetRaw & { _health: number; _rul: number; _type: string; _lat: number; _lng: number };
+    });
+
     // Gauge Data
-    const totalHealth = assets.reduce((sum, a) => sum + (a.health_score || 0), 0);
-    const fleetHealth = totalHealth / assets.length;
-    const excellentCount = assets.filter(a => a.health_score >= 80).length;
-    const goodCount = assets.filter(a => a.health_score >= 60 && a.health_score < 80).length;
-    const okCount = assets.filter(a => a.health_score >= 40 && a.health_score < 60).length;
-    const criticalCount = assets.filter(a => a.health_score < 40).length;
+    const totalHealth = normalized.reduce((sum, a) => sum + (a._health || 0), 0);
+    const fleetHealth = normalized.length ? totalHealth / normalized.length : 0;
+    const excellentCount = normalized.filter(a => a._health >= 80).length;
+    const goodCount = normalized.filter(a => a._health >= 60 && a._health < 80).length;
+    const okCount = normalized.filter(a => a._health >= 40 && a._health < 60).length;
+    const criticalCount = normalized.filter(a => a._health < 40).length;
 
     const gaugeData: GaugeData = {
       fleetHealth,
-      totalAssets: assets.length,
+      totalAssets: normalized.length,
       excellentCount,
       goodCount,
       okCount,
       criticalCount
     };
 
-    // Bar Data - RUL Distribution by Asset Type
-    const assetTypes = [...new Set(assets.map(a => a.type))];
-    const barData: RULDistribution[] = assetTypes.map(type => {
-      const typeAssets = assets.filter(a => a.type === type);
+    // RUL distribution by _type
+    const assetTypes = Array.from(new Set(normalized.map(a => a._type)));
+  const barData: RULDistribution[] = assetTypes.map(type => { 
+      const typeAssets = normalized.filter(a => a._type === type);
       return {
         assetType: type,
-        critical: typeAssets.filter(a => (a.predicted_rul_days || 0) <= 30).length,
-        warning: typeAssets.filter(a => (a.predicted_rul_days || 0) > 30 && (a.predicted_rul_days || 0) <= 90).length,
-        monitor: typeAssets.filter(a => (a.predicted_rul_days || 0) > 90 && (a.predicted_rul_days || 0) <= 365).length,
-        good: typeAssets.filter(a => (a.predicted_rul_days || 0) > 365).length,
+        critical: typeAssets.filter(a => a._rul <= 30).length,
+        warning: typeAssets.filter(a => a._rul > 30 && a._rul <= 90).length,
+        monitor: typeAssets.filter(a => a._rul > 90 && a._rul <= 365).length,
+        good: typeAssets.filter(a => a._rul > 365).length,
         total: typeAssets.length
       };
     });
 
-    // Scatter Data
-    const scatterData: ScatterData[] = assets.map(a => ({
-      assetId: a.asset_id,
-      type: a.type,
-      location: a.location,
-      healthScore: a.health_score || 0,
-      rulDays: a.predicted_rul_days || 0,
-      priority: a.maintenance_priority || 'Low',
-      alertCount: a.active_alerts || 0,
-      vendor: a.vendor_name || 'Unknown',
-      utilizationPercentage: a.utilization_percentage || 0
+    // Scatter
+    const scatterData: ScatterData[] = normalized.map(a => ({
+      assetId: (a.asset_id ?? a.assetId ?? a.id ?? '') as string,
+      type: a._type,
+      location: (a.location ?? '') as string,
+      healthScore: a._health,
+      rulDays: a._rul,
+      priority: (a.maintenance_priority ?? a.priority ?? 'Low') as string,
+      alertCount: (a.active_alerts ?? a.alert_count ?? 0) as number,
+      vendor: (a.vendor_name ?? a.vendor ?? 'Unknown') as string,
+      utilizationPercentage: a.utilization_percentage
     }));
 
-    // Heatmap Data
-    const heatmapData: HeatmapAsset[] = assets
-      .filter(a => a.gps_lat && a.gps_lng)
+    // Heatmap
+    const heatmapData: HeatmapAsset[] = normalized
+      .filter(a => !!a._lat && !!a._lng)
       .map(a => ({
-        assetId: a.asset_id,
-        lat: a.gps_lat!,
-        lng: a.gps_lng!,
-        healthScore: a.health_score || 0,
-        type: a.type,
-        location: a.location,
-        rulDays: a.predicted_rul_days || 0,
-        priority: a.maintenance_priority || 'Low',
+        assetId: (a.asset_id ?? a.assetId ?? a.id ?? '') as string,
+        lat: a._lat,
+        lng: a._lng,
+        healthScore: a._health,
+        type: a._type,
+        location: (a.location ?? '') as string,
+        rulDays: a._rul,
+        priority: (a.maintenance_priority ?? a.priority ?? 'Low') as string,
         condition: a.condition
       }));
 
-    // Line Chart Data - Simulate health trends over time by asset type
+    // Line chart - simulate trend
     const lineChartData: any[] = [];
     for (let i = 23; i >= 0; i--) {
       const weekLabel = `Week ${24 - i}`;
       const weekData: any = { week: weekLabel };
-      
-      assetTypes.forEach(type => {
-        const typeAssets = assets.filter(a => a.type === type);
+    assetTypes.forEach(type => { 
+        const typeAssets = normalized.filter(a => a._type === type);
         const avgHealth = typeAssets.length > 0
-          ? typeAssets.reduce((sum, a) => sum + (a.health_score || 0), 0) / typeAssets.length
+          ? typeAssets.reduce((s, a) => s + (a._health || 0), 0) / typeAssets.length
           : 0;
-        
-        // Add slight variance to show trend (simulate historical data)
         const variance = (Math.random() - 0.5) * 5 * (i / 24);
         weekData[type] = Math.max(0, Math.min(100, avgHealth + variance));
       });
-      
       lineChartData.push(weekData);
     }
 
@@ -558,7 +578,7 @@ const AIAnalytics: React.FC = () => {
                         key={type}
                         type="monotone"
                         dataKey={type}
-                        stroke={colors[type] || '#6366F1'}
+                        stroke={colors[type as string] ?? '#6366F1'}
                         strokeWidth={2}
                         dot={false}
                       />
