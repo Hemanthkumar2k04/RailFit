@@ -64,11 +64,6 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
 
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    """Handle OPTIONS requests for CORS preflight"""
-    return {"message": "OK"}
-
 if __name__ == "__main__":
     import uvicorn
     import os

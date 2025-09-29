@@ -29,27 +29,46 @@ class Settings(BaseSettings):
     # Allow configuring allowed origins via the ALLOWED_ORIGINS environment variable (comma-separated).
     # Example: ALLOWED_ORIGINS="https://my-frontend.vercel.app,https://example.com"
     _allowed_origins_str: str = os.getenv("ALLOWED_ORIGINS", "")
+    # Optional single frontend URL env var (convenience for deployments)
+    frontend_url: str = os.getenv("FRONTEND_URL", "")
     
     @property
     def allowed_origins(self) -> list[str]:
         """Parse allowed origins from env var or use defaults"""
         if self._allowed_origins_str:
             return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
-        
-        # In production, allow all origins to avoid CORS issues during deployment
-        if not self.debug:
-            return ["*"]
-        
-        # Development origins
-        return [
-            "http://localhost:3000", 
-            "http://localhost:5000",
-            "http://localhost:5173", 
-            "http://127.0.0.1:3000", 
-            "http://127.0.0.1:5000",
-            "http://127.0.0.1:5173", 
-            "https://rail-fit.vercel.app"
-        ]
+        # Build a sensible default list instead of using a wildcard.
+        # This allows both local development and deployed frontends to work
+        # without needing to toggle code between environments.
+        origins: list[str] = []
+
+        # Development localhosts (useful when debug=True)
+        origins.extend([
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ])
+
+        # Use explicit FRONTEND_URL if provided (recommended in production)
+        if self.frontend_url:
+            origins.append(self.frontend_url)
+        else:
+            # Common deployment URLs for the project (fallbacks)
+            origins.extend([
+                "https://railfit-production.up.railway.app",
+                "https://rail-fit.vercel.app",
+            ])
+
+        # Remove duplicates while preserving order
+        seen = set()
+        deduped: list[str] = []
+        for o in origins:
+            if o not in seen:
+                seen.add(o)
+                deduped.append(o)
+
+        return deduped
     
     # File Upload
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
