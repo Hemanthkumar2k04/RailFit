@@ -56,7 +56,7 @@ export default function Login() {
 
     const fillDemoCredentials = (email: string) => {
         setEmail(email)
-        setPassword('admin123')
+        setPassword('railway123')
     }
 
     return (
