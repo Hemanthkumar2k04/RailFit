@@ -194,7 +194,7 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
             
             return (
               <div
-                key={idx}
+                key={asset.assetId ?? idx}
                 className={`absolute w-4 h-4 rounded-full ${getHealthColor(asset.healthScore)} 
                   opacity-70 hover:opacity-100 cursor-pointer transition-all hover:scale-150 hover:z-10`}
                 style={{
@@ -549,18 +549,21 @@ const AIAnalytics: React.FC = () => {
                   <ReferenceLine x={50} stroke="#666" strokeDasharray="3 3" />
                   <ReferenceLine y={180} stroke="#666" strokeDasharray="3 3" />
                   
-                  {Object.entries(priorityColors).map(([priority, color]) => (
-                    <Scatter
-                      key={priority}
-                      name={priority}
-                      data={scatterData.filter(d => d.priority === priority)}
-                      fill={color}
-                    >
-                      {scatterData.filter(d => d.priority === priority).map((_, index) => (
-                        <Cell key={`cell-${index}`} fillOpacity={0.7} />
-                      ))}
-                    </Scatter>
-                  ))}
+                  {Object.entries(priorityColors).map(([priority, color]) => {
+                    const series = scatterData.filter(d => d.priority === priority);
+                    return (
+                      <Scatter
+                        key={priority}
+                        name={priority}
+                        data={series}
+                        fill={color}
+                      >
+                        {series.map((entry) => (
+                          <Cell key={`${entry.assetId}-${priority}`} fillOpacity={0.7} />
+                        ))}
+                      </Scatter>
+                    );
+                  })}
                 </ScatterChart>
               </ResponsiveContainer>
               
