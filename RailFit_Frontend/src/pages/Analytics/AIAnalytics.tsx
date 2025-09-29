@@ -10,12 +10,7 @@ const SUPABASE_URL = 'https://nlxrpnjccouogrfbbgmk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5seHJwbmpjY291b2dyZmJiZ21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzM2NjQsImV4cCI6MjA3Mzk0OTY2NH0.begglCbsqiTX7Sop_09BpTRHw31NGm9nThoTkk4aEJE';
 
 // Type Definitions
-interface AssetHealthData {
-  week: string;
-  assetType: string;
-  avgHealthScore: number;
-  assetsTracked: number;
-}
+// AssetHealthData interface removed (unused) to fix TS unused-symbol error
 
 interface RULDistribution {
   assetType: string;
@@ -360,9 +355,7 @@ const AIAnalytics: React.FC = () => {
 
     // Line Chart Data - Group by asset type and time
     const lineChartData: any[] = [];
-    const now = new Date();
     for (let i = 23; i >= 0; i--) {
-      const weekDate = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const weekLabel = `Week ${24 - i}`;
       const weekData: any = { week: weekLabel };
       
@@ -563,7 +556,7 @@ const AIAnalytics: React.FC = () => {
                       data={scatterData.filter(d => d.priority === priority)}
                       fill={color}
                     >
-                      {scatterData.filter(d => d.priority === priority).map((entry, index) => (
+                      {scatterData.filter(d => d.priority === priority).map((_, index) => (
                         <Cell key={`cell-${index}`} fillOpacity={0.7} />
                       ))}
                     </Scatter>
