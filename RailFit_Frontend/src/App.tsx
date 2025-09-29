@@ -10,7 +10,7 @@ import AssetDetail from './pages/Assets/AssetDetail.tsx'
 import Inspections from './pages/Inspections/InspectionList'
 import Analytics from './pages/Analytics/AIAnalytics'
 import Alerts from './pages/Alerts/AlertList'
-import Settings from './pages/Settings/UserManagement'
+
 import './App.css'
 
 // Protected Route Component
@@ -48,7 +48,7 @@ function AppLayout() {
           <Route path="/inspections" element={<Inspections />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/alerts" element={<Alerts />} />
-          <Route path="/settings" element={<Settings />} />
+
         </Routes>
       </main>
     </>
