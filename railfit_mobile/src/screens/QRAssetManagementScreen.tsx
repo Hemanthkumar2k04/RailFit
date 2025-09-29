@@ -988,16 +988,17 @@ Health Score: ${asset.health_score}%
   );
 
   // Column width definitions for better alignment
+  const screenWidth = width - 40; // Account for padding
   const columnWidths = {
-    checkbox: 50,
-    assetId: 80,
-    type: 70,
-    location: 100,
-    healthScore: 60,
-    condition: 70,
-    status: 60,
-    installDate: 80,
-    actions: 120
+    checkbox: 45,
+    assetId: Math.floor(screenWidth * 0.12), // 12% of screen
+    type: Math.floor(screenWidth * 0.15), // 15% of screen
+    location: Math.floor(screenWidth * 0.18), // 18% of screen  
+    healthScore: Math.floor(screenWidth * 0.10), // 10% of screen
+    condition: Math.floor(screenWidth * 0.12), // 12% of screen
+    status: Math.floor(screenWidth * 0.12), // 12% of screen
+    installDate: Math.floor(screenWidth * 0.11), // 11% of screen
+    actions: Math.floor(screenWidth * 0.15) // 15% of screen
   };
 
   const AssetTableRow = ({ asset, isSelected, onToggle }: {

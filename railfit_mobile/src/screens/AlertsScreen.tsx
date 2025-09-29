@@ -311,6 +311,17 @@ export default function AlertsScreen() {
     RNAlert.alert('New Alert', 'Create a new alert');
   };
 
+  const handleViewDetails = (alert: Alert) => {
+    // Navigate to detailed alert view or show comprehensive information
+    console.log('Viewing detailed information for alert:', alert.alertId);
+    // TODO: Navigate to AlertDetailsScreen or expand modal with more details
+    RNAlert.alert(
+      'Alert Details',
+      `Full details for ${alert.alertId} would be displayed here. This could include historical data, related assets, maintenance history, and AI analysis.`,
+      [{ text: 'OK' }]
+    );
+  };
+
   // Calculate metrics
   const totalAlerts = alerts.length;
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
@@ -565,7 +576,7 @@ export default function AlertsScreen() {
                       <Text style={styles.resolveActionText}>Resolve</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity style={styles.actionButton}>
+                  <TouchableOpacity style={styles.actionButton} onPress={() => handleViewDetails(selectedAlert)}>
                     <Ionicons name="document-text" size={20} color="#2563eb" />
                     <Text style={styles.actionButtonText}>View Details</Text>
                   </TouchableOpacity>

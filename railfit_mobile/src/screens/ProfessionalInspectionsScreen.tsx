@@ -93,6 +93,25 @@ const InspectionsScreen: React.FC = () => {
     });
   };
 
+  const handleViewInspectionDetails = (inspection: Inspection) => {
+    // View detailed inspection information
+    console.log('Viewing inspection details:', inspection);
+    // You can add a modal or navigate to details screen
+    alert(`Inspection Details\n\nAsset: ${inspection.assetId}\nLocation: ${inspection.location}\nType: ${inspection.type}\nStatus: ${inspection.status}\nAI Confidence: ${inspection.aiConfidence}%\nInspector: ${inspection.inspector}\nDate: ${inspection.date}`);
+  };
+
+  const handleEditInspection = (inspection: Inspection) => {
+    // Edit inspection functionality
+    console.log('Editing inspection:', inspection);
+    alert(`Edit Inspection\n\nEditing inspection for asset ${inspection.assetId}\nThis would open an edit form or modal.`);
+  };
+
+  const handleGenerateReport = (inspection: Inspection) => {
+    // Generate inspection report
+    console.log('Generating report for:', inspection);
+    alert(`Report Generated\n\nInspection report for ${inspection.assetId} has been generated.\nThis would typically download or share a PDF report.`);
+  };
+
   const renderStatCard = (title: string, value: string | number, subtitle: string, color: string, icon: string, trend?: string) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statHeader}>
@@ -222,11 +241,100 @@ const InspectionsScreen: React.FC = () => {
           ) : (
             <View style={styles.inspectionsList}>
               {filteredInspections.map((inspection) => (
-                <View key={inspection.id} style={styles.inspectionCard}>
-                  {/* Render inspection cards here */}
-                  <Text style={styles.inspectionId}>{inspection.assetId}</Text>
-                  <Text style={styles.inspectionLocation}>{inspection.location}</Text>
-                </View>
+                <TouchableOpacity key={inspection.id} style={styles.inspectionCard}>
+                  {/* Header with Asset ID and Status */}
+                  <View style={styles.inspectionHeader}>
+                    <View style={styles.inspectionIdContainer}>
+                      <Text style={styles.inspectionId}>{inspection.assetId}</Text>
+                      <Text style={styles.inspectionDate}>{new Date(inspection.date).toLocaleDateString()}</Text>
+                    </View>
+                    <View style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor: 
+                          inspection.status === 'defective' ? '#fef2f2' :
+                          inspection.status === 'non-defective' ? '#f0fdf4' : '#fefbf2',
+                        borderColor:
+                          inspection.status === 'defective' ? '#ef4444' :
+                          inspection.status === 'non-defective' ? '#10b981' : '#f59e0b'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        {
+                          color: 
+                            inspection.status === 'defective' ? '#ef4444' :
+                            inspection.status === 'non-defective' ? '#10b981' : '#f59e0b'
+                        }
+                      ]}>
+                        {inspection.status === 'defective' ? 'DEFECTIVE' :
+                         inspection.status === 'non-defective' ? 'PASSED' : 'REVIEW'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Content */}
+                  <View style={styles.inspectionContent}>
+                    <View style={styles.inspectionRow}>
+                      <Ionicons name="location-outline" size={16} color="#6b7280" />
+                      <Text style={styles.inspectionLocation}>{inspection.location}</Text>
+                    </View>
+                    <View style={styles.inspectionRow}>
+                      <Ionicons name="eye-outline" size={16} color="#6b7280" />
+                      <Text style={styles.inspectionType}>{inspection.type}</Text>
+                    </View>
+                    <View style={styles.inspectionRow}>
+                      <Ionicons name="person-outline" size={16} color="#6b7280" />
+                      <Text style={styles.inspectionInspector}>{inspection.inspector}</Text>
+                    </View>
+                    
+                    {/* AI Confidence Score */}
+                    <View style={styles.confidenceContainer}>
+                      <Text style={styles.confidenceLabel}>AI Confidence: </Text>
+                      <View style={styles.confidenceBar}>
+                        <View 
+                          style={[
+                            styles.confidenceFill,
+                            { 
+                              width: `${inspection.aiConfidence}%`,
+                              backgroundColor: 
+                                inspection.aiConfidence >= 80 ? '#10b981' :
+                                inspection.aiConfidence >= 60 ? '#f59e0b' : '#ef4444'
+                            }
+                          ]} 
+                        />
+                      </View>
+                      <Text style={styles.confidenceValue}>{inspection.aiConfidence}%</Text>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.inspectionActions}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleViewInspectionDetails(inspection)}
+                    >
+                      <Ionicons name="eye" size={16} color="#3b82f6" />
+                      <Text style={styles.actionButtonText}>View</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleEditInspection(inspection)}
+                    >
+                      <Ionicons name="create-outline" size={16} color="#f59e0b" />
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleGenerateReport(inspection)}
+                    >
+                      <Ionicons name="document-text-outline" size={16} color="#10b981" />
+                      <Text style={styles.actionButtonText}>Report</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -664,6 +772,103 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  // New inspection card styles
+  inspectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  inspectionIdContainer: {
+    flex: 1,
+  },
+  inspectionDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  inspectionContent: {
+    marginBottom: 16,
+  },
+  inspectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
+  },
+  inspectionType: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  inspectionInspector: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  confidenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  confidenceLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  confidenceBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  confidenceFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  confidenceValue: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '600',
+    minWidth: 35,
+  },
+  inspectionActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 4,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
   },
 });
 

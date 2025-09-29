@@ -253,15 +253,15 @@ const ProfessionalAnalyticsScreen: React.FC = () => {
       </View>
 
       <View style={styles.analyticsActions}>
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => handleViewAnalyticsDetails(item.id)}>
           <Ionicons name="eye-outline" size={14} color="#6b7280" />
           <Text style={styles.actionText}>View Details</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.reportButton]}>
+        <TouchableOpacity style={[styles.actionButton, styles.reportButton]} onPress={() => handleGenerateAnalyticsReport(item.id)}>
           <Ionicons name="document-text-outline" size={14} color="#3b82f6" />
           <Text style={[styles.actionText, { color: '#3b82f6' }]}>Generate Report</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.scheduleButton]}>
+        <TouchableOpacity style={[styles.actionButton, styles.scheduleButton]} onPress={handleScheduleAnalysis}>
           <Ionicons name="calendar-outline" size={14} color="#10b981" />
           <Text style={[styles.actionText, { color: '#10b981' }]}>Schedule</Text>
         </TouchableOpacity>
@@ -281,6 +281,31 @@ const ProfessionalAnalyticsScreen: React.FC = () => {
     </View>
   );
 
+  // Handler functions for analytics actions
+  const handleViewAnalyticsDetails = (analysisId: string) => {
+    // Navigate to detailed analytics view or show modal with comprehensive data
+    console.log('Viewing analytics details for:', analysisId);
+    // TODO: Navigate to AnalyticsDetailsScreen or show detailed modal
+  };
+
+  const handleGenerateAnalyticsReport = (analysisId?: string) => {
+    // Generate and download/share analytics report
+    console.log('Generating analytics report for:', analysisId || 'all analytics');
+    // TODO: Implement report generation logic
+  };
+
+  const handleScheduleAnalysis = () => {
+    // Open scheduling interface for automated analytics
+    console.log('Opening schedule analysis interface');
+    // TODO: Navigate to ScheduleAnalysisScreen or show scheduling modal
+  };
+
+  const handleNewAnalysis = () => {
+    // Start new manual analysis or navigate to analysis creation
+    console.log('Starting new analysis');
+    // TODO: Navigate to NewAnalysisScreen or show analysis creation modal
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -292,7 +317,7 @@ const ProfessionalAnalyticsScreen: React.FC = () => {
               Advanced predictive analytics{'\n'}and intelligent insights
             </Text>
           </View>
-          <TouchableOpacity style={styles.newAnalysisButton}>
+          <TouchableOpacity style={styles.newAnalysisButton} onPress={handleNewAnalysis}>
             <Ionicons name="add" size={20} color="#ffffff" />
             <Text style={styles.newAnalysisButtonText}>New Analysis</Text>
           </TouchableOpacity>
