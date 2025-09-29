@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import timedelta
 from app.core.security import verify_password, create_access_token, verify_token
@@ -6,6 +6,11 @@ from app.core.config import settings
 import httpx
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"])
 security = HTTPBearer()
@@ -134,33 +139,58 @@ async def get_current_user(
     return user
 
 @router.post("/login", response_model=Token)
-async def login_user(login_data: LoginRequest):
+async def login_user(login_data: LoginRequest, response: Response):
     """Login user and return JWT token"""
-    user = await authenticate_user(login_data.email, login_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        logger.info(f"Login attempt for email: {login_data.email}")
+        
+        # Add CORS headers explicitly
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        
+        user = await authenticate_user(login_data.email, login_data.password)
+        if not user:
+            logger.warning(f"Failed login attempt for email: {login_data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        access_token = create_access_token(
+            data={"user_id": user["user_id"], "email": user["email"], "role": user["role"]},
+            expires_delta=access_token_expires
         )
-    
-    access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
-    access_token = create_access_token(
-        data={"user_id": user["user_id"], "email": user["email"], "role": user["role"]},
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer", 
-        "expires_in": settings.jwt_access_token_expire_minutes * 60,
-        "user": {
-            "user_id": user["user_id"],
-            "name": user["name"],
-            "email": user["email"],
-            "role": user["role"]
+        
+        logger.info(f"Successful login for user: {user['email']}")
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer", 
+            "expires_in": settings.jwt_access_token_expire_minutes * 60,
+            "user": {
+                "user_id": user["user_id"],
+                "name": user["name"],
+                "email": user["email"],
+                "role": user["role"]
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error for {login_data.email}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during login"
+        )
+
+@router.options("/login")
+@router.options("/register")
+async def auth_options():
+    """Handle CORS preflight requests for auth endpoints"""
+    return {"message": "OK"}
 
 @router.post("/register", response_model=Token)
 async def register_user(user_data: RegisterRequest):

@@ -35,6 +35,12 @@ class Settings(BaseSettings):
         """Parse allowed origins from env var or use defaults"""
         if self._allowed_origins_str:
             return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
+        
+        # In production, allow all origins to avoid CORS issues during deployment
+        if not self.debug:
+            return ["*"]
+        
+        # Development origins
         return [
             "http://localhost:3000", 
             "http://localhost:5000",
