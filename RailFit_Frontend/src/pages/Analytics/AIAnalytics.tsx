@@ -124,7 +124,7 @@ const GaugeChart: React.FC<{ data: GaugeData }> = ({ data }) => {
   const getColor = (score: number) => {
     if (score >= 80) return '#16A34A';
     if (score >= 60) return '#EAB308';
-    if (score >= 40) return '#F59E0B';
+    if (score >= 40) return '#d35545ff';
     return '#DC2626';
   };
 
@@ -227,7 +227,7 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
   const getHealthColor = (health: number) => {
     if (health >= 80) return 'bg-green-500';
     if (health >= 60) return 'bg-yellow-500';
-    if (health >= 40) return 'bg-orange-500';
+    if (health >= 40) return 'bg-orange-800';
     return 'bg-red-500';
   };
 
@@ -467,7 +467,7 @@ const AIAnalytics: React.FC = () => {
 
   const priorityColors: Record<string, string> = {
     'Immediate': '#DC2626',
-    'High': '#F59E0B',
+    'High': '#e53935', // changed to a more red color
     'Medium': '#EAB308',
     'Low': '#16A34A'
   };
