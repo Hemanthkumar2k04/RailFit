@@ -36,7 +36,8 @@ module.exports = function (api) {
             '.json'
           ]
         }
-      ]
+      ],
+      'react-native-reanimated/plugin'
     ]
   };
 };

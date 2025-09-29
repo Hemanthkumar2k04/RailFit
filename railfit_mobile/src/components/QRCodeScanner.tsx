@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import { Camera } from 'expo-camera';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ interface ScanResult {
   timestamp: Date;
   assetId?: string;
   vendorId?: string;
+  assetInfo?: AssetInfo;
 }
 
 interface AssetInfo {
@@ -66,8 +68,13 @@ export default function QRCodeScanner({ onScanSuccess, onCancel }: QRCodeScanner
   }, []);
 
   const getPermissions = async () => {
-    const { status } = await BarCodeScanner.requestPermissionsAsync();
-    setHasPermission(status === 'granted');
+    try {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    } catch (error) {
+      console.log('Permission error:', error);
+      setHasPermission(false);
+    }
   };
 
   const getCurrentLocation = async () => {
@@ -266,6 +273,7 @@ export default function QRCodeScanner({ onScanSuccess, onCancel }: QRCodeScanner
         timestamp: new Date(),
         assetId: assetInfo.id,
         vendorId: assetInfo.vendor,
+        assetInfo: assetInfo,
       };
 
       // Show comprehensive asset info before proceeding

@@ -16,10 +16,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
+import { Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
-import QRCodeScanner from '../components/QRCodeScanner';
+import SimpleQRScanner from '../components/SimpleQRScanner';
 import SharedSidebar from '../components/SharedSidebar';
 import { useSidebar } from '../hooks/useSidebar';
 
@@ -217,6 +218,20 @@ export default function AssetsScreen() {
   const [showEditAssetModal, setShowEditAssetModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editForm, setEditForm] = useState<Partial<Asset>>({});
+  
+  // New Asset Form State
+  const [newAssetForm, setNewAssetForm] = useState({
+    asset_id: '',
+    type: '',
+    location: '',
+    serial_number: '',
+    manufacturer: '',
+    model: '',
+    description: '',
+    status: 'not_installed' as const,
+    condition: 'excellent' as const,
+    health_score: 100
+  });
 
   useEffect(() => {
     filterAssets();
@@ -384,7 +399,8 @@ export default function AssetsScreen() {
       
       // Create a permanent file
       const fileName = `QR_${asset.asset_id}_${Date.now()}.png`;
-      const permanentUri = `${FileSystem.documentDirectory}${fileName}`;
+      const documentDir = Paths.document.uri;
+      const permanentUri = `${documentDir}${fileName}`;
       
       // Copy to permanent location
       await FileSystem.copyAsync({
@@ -441,49 +457,154 @@ export default function AssetsScreen() {
   };
 
   const handleAddNewAsset = () => {
+    // Generate new asset ID
+    const newId = `AS-${Date.now().toString().slice(-6)}`;
+    setNewAssetForm({
+      asset_id: newId,
+      type: '',
+      location: '',
+      serial_number: '',
+      manufacturer: '',
+      model: '',
+      description: '',
+      status: 'not_installed',
+      condition: 'excellent',
+      health_score: 100
+    });
     setShowAddAssetModal(true);
+  };
+
+  const saveNewAsset = () => {
+    // Validate required fields
+    if (!newAssetForm.type || !newAssetForm.location) {
+      Alert.alert('Validation Error', 'Please fill in all required fields (Asset Type and Location)');
+      return;
+    }
+
+    // Create new asset object
+    const newAsset: Asset = {
+      asset_id: newAssetForm.asset_id,
+      type: newAssetForm.type,
+      location: newAssetForm.location,
+      status: newAssetForm.status,
+      condition: newAssetForm.condition,
+      health_score: newAssetForm.health_score,
+      install_date: new Date().toISOString().split('T')[0],
+      next_maintenance: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 months from now
+      last_maintenance: undefined,
+      serial_number: newAssetForm.serial_number || undefined,
+      manufacturer: newAssetForm.manufacturer || undefined,
+      model: newAssetForm.model || undefined,
+      description: newAssetForm.description || undefined,
+      vendor_id: 'V001', // Default vendor
+      purchase_cost: 0,
+      warranty_expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year warranty
+      technical_specs: 'Standard specifications',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Add to assets list
+    const updatedAssets = [...assets, newAsset];
+    setAssets(updatedAssets);
+    
+    // Update filtered assets - using filterAssets() function that exists
+    setAssets(updatedAssets);
+    filterAssets();
+    
+    // Close modal and show success
+    setShowAddAssetModal(false);
+    Alert.alert('Success', `Asset ${newAsset.asset_id} has been created successfully!`);
   };
 
   const handleBulkImport = async () => {
     try {
       Alert.alert(
         'Bulk Import Assets',
-        'Import assets from CSV file. Make sure your CSV has columns: asset_id, type, location, status, condition, health_score, description',
+        'Choose an option to import asset data. You can download a template or simulate importing sample data.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Import CSV',
+            text: 'Download Template',
             onPress: async () => {
               try {
-                // In a real implementation, you'd use DocumentPicker to select CSV file
-                // For now, we'll show the template download and simulate import
-                Alert.alert(
-                  'CSV Template',
-                  'Download the CSV template first, fill it with your asset data, then use this import function.',
-                  [
-                    {
-                      text: 'Download Template',
-                      onPress: async () => {
-                        const csvTemplate = `asset_id,type,location,status,condition,health_score,description,serial_number,manufacturer,model\nAST-001,Rail Pad,Platform A,active,excellent,95,High-grade rail pad,RP-001,Railway Corp,RP-2024-HD\nAST-002,Elastic Rail Clip,Junction B,active,good,85,Standard rail clip,ERC-002,Clip Systems,ERC-2024-STD`;
-                        
-                        const templateUri = `${FileSystem.documentDirectory}asset_import_template.csv`;
-                        await FileSystem.writeAsStringAsync(templateUri, csvTemplate);
-                        
-                        if (await Sharing.isAvailableAsync()) {
-                          await Sharing.shareAsync(templateUri, {
-                            mimeType: 'text/csv',
-                            dialogTitle: 'Asset Import Template'
-                          });
-                        }
-                        
-                        Alert.alert('Success', 'CSV template downloaded! Fill it with your data and use the import function.');
-                      }
-                    },
-                    { text: 'Cancel', style: 'cancel' }
-                  ]
-                );
+                const csvTemplate = `asset_id,type,location,status,condition,health_score,description,serial_number,manufacturer,model,vendor_id,purchase_cost\nAST-NEW-001,Rail Pad,Platform A,active,excellent,95,High-grade rail pad for platform,RP-001,Railway Corp,RP-2024-HD,V001,2500\nAST-NEW-002,Elastic Rail Clip,Junction B,active,good,85,Standard rail clip for junction,ERC-002,Clip Systems,ERC-2024-STD,V002,1200\nAST-NEW-003,Liner,Track Section C,not_installed,excellent,100,Protective liner for track section,LN-003,Track Solutions,LN-2024-PRO,V003,800\nAST-NEW-004,Sleeper,Bridge D,active,fair,70,Concrete sleeper for bridge,SL-004,Bridge Corp,SL-2024-CON,V001,5000`;
+                
+                const templateUri = Paths.cache.uri + `bulk_import_template_${Date.now()}.csv`;
+                await FileSystem.writeAsStringAsync(templateUri, csvTemplate);
+                
+                if (await Sharing.isAvailableAsync()) {
+                  await Sharing.shareAsync(templateUri, {
+                    mimeType: 'text/csv',
+                    dialogTitle: 'Asset Import Template'
+                  });
+                }
+                
+                Alert.alert('Template Downloaded', 'CSV template downloaded with sample data! Fill it with your asset data.');
               } catch (error) {
-                Alert.alert('Error', 'Failed to process import');
+                Alert.alert('Error', 'Failed to download template');
+              }
+            }
+          },
+          {
+            text: 'Import Sample Data',
+            onPress: async () => {
+              try {
+                // Simulate importing sample assets
+                const sampleAssets: Asset[] = [
+                  {
+                    asset_id: `AST-IMP-${Date.now()}-001`,
+                    type: 'Rail Pad',
+                    location: 'Imported Platform A',
+                    status: 'active',
+                    condition: 'excellent',
+                    health_score: 95,
+                    install_date: new Date().toISOString().split('T')[0],
+                    next_maintenance: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    last_maintenance: undefined,
+                    serial_number: 'RP-IMP-001',
+                    manufacturer: 'Railway Corp',
+                    model: 'RP-2024-HD',
+                    description: 'Imported high-grade rail pad',
+                    vendor_id: 'V001',
+                    purchase_cost: 2500,
+                    warranty_expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    technical_specs: 'High-grade specifications',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  },
+                  {
+                    asset_id: `AST-IMP-${Date.now()}-002`,
+                    type: 'Elastic Rail Clip',
+                    location: 'Imported Junction B',
+                    status: 'active',
+                    condition: 'good',
+                    health_score: 85,
+                    install_date: new Date().toISOString().split('T')[0],
+                    next_maintenance: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    last_maintenance: undefined,
+                    serial_number: 'ERC-IMP-002',
+                    manufacturer: 'Clip Systems',
+                    model: 'ERC-2024-STD',
+                    description: 'Imported standard rail clip',
+                    vendor_id: 'V002',
+                    purchase_cost: 1200,
+                    warranty_expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    technical_specs: 'Standard specifications',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }
+                ];
+
+                const updatedAssets = [...assets, ...sampleAssets];
+                setAssets(updatedAssets);
+                setAssets(updatedAssets);
+                // Trigger re-filtering
+                filterAssets();
+                
+                Alert.alert('Import Complete', `Successfully imported ${sampleAssets.length} sample assets!`);
+              } catch (error) {
+                Alert.alert('Error', 'Failed to import sample data');
               }
             }
           }
@@ -497,33 +618,174 @@ export default function AssetsScreen() {
 
   const handleGenerateReports = async () => {
     try {
-      const totalAssets = assets.length;
-      const activeAssets = assets.filter(a => a.status === 'active').length;
-      const maintenanceAssets = assets.filter(a => a.status === 'under_maintenance').length;
-      const criticalAssets = assets.filter(a => a.condition === 'critical').length;
-      const avgHealthScore = totalAssets > 0 ? (assets.reduce((sum, a) => sum + (a.health_score || 0), 0) / totalAssets).toFixed(1) : '0';
-      
-      const reportContent = `RAILWAY ASSET MANAGEMENT REPORT\nGenerated: ${new Date().toLocaleString()}\n\n=== SUMMARY ===\nTotal Assets: ${totalAssets}\nActive Assets: ${activeAssets}\nUnder Maintenance: ${maintenanceAssets}\nCritical Condition: ${criticalAssets}\nAverage Health Score: ${avgHealthScore}%\n\n=== CRITICAL ASSETS ===\n${assets.filter(a => a.condition === 'critical').map(asset => 
-        `- ${asset.asset_id} (${asset.type}) at ${asset.location}`
-      ).join('\n') || 'No critical assets found'}`;
-      
-      const reportFileName = `Asset_Report_${new Date().toISOString().split('T')[0]}.txt`;
-      const reportUri = `${FileSystem.documentDirectory}${reportFileName}`;
-      await FileSystem.writeAsStringAsync(reportUri, reportContent);
-      
       Alert.alert(
-        'Report Generated',
-        `Asset report created with ${totalAssets} assets analyzed.`,
+        'Generate Reports',
+        'Choose the type of report you want to generate:',
         [
-          { text: 'Share Report', onPress: async () => {
-            if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(reportUri, {
-                mimeType: 'text/plain',
-                dialogTitle: 'Railway Asset Report'
-              });
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Summary Report',
+            onPress: async () => {
+              const totalAssets = assets.length;
+              const activeAssets = assets.filter(a => a.status === 'active').length;
+              const maintenanceAssets = assets.filter(a => a.status === 'under_maintenance').length;
+              const retiredAssets = assets.filter(a => a.status === 'retired').length;
+              const notInstalledAssets = assets.filter(a => a.status === 'not_installed').length;
+              
+              const excellentAssets = assets.filter(a => a.condition === 'excellent').length;
+              const goodAssets = assets.filter(a => a.condition === 'good').length;
+              const fairAssets = assets.filter(a => a.condition === 'fair').length;
+              const criticalAssets = assets.filter(a => a.condition === 'critical').length;
+              
+              const avgHealthScore = totalAssets > 0 ? (assets.reduce((sum, a) => sum + (a.health_score || 0), 0) / totalAssets).toFixed(1) : '0';
+              const totalValue = assets.reduce((sum, a) => sum + (a.purchase_cost || 0), 0);
+              
+              const assetsByType = assetTypes.map(type => ({
+                type,
+                count: assets.filter(a => a.type === type).length,
+                avgHealth: assets.filter(a => a.type === type).length > 0 
+                  ? (assets.filter(a => a.type === type).reduce((sum, a) => sum + (a.health_score || 0), 0) / assets.filter(a => a.type === type).length).toFixed(1)
+                  : '0'
+              }));
+              
+              const reportContent = `COMPREHENSIVE RAILWAY ASSET MANAGEMENT REPORT
+Generated: ${new Date().toLocaleString()}
+Report ID: RPT-${Date.now()}
+
+${'='.repeat(60)}
+EXECUTIVE SUMMARY
+${'='.repeat(60)}
+Total Assets: ${totalAssets}
+Total Asset Value: $${totalValue.toLocaleString()}
+Average Health Score: ${avgHealthScore}%
+
+${'='.repeat(60)}
+ASSET STATUS BREAKDOWN
+${'='.repeat(60)}
+Active: ${activeAssets} (${(activeAssets/totalAssets*100).toFixed(1)}%)
+Under Maintenance: ${maintenanceAssets} (${(maintenanceAssets/totalAssets*100).toFixed(1)}%)
+Retired: ${retiredAssets} (${(retiredAssets/totalAssets*100).toFixed(1)}%)
+Not Installed: ${notInstalledAssets} (${(notInstalledAssets/totalAssets*100).toFixed(1)}%)
+
+${'='.repeat(60)}
+CONDITION ANALYSIS
+${'='.repeat(60)}
+Excellent: ${excellentAssets} (${(excellentAssets/totalAssets*100).toFixed(1)}%)
+Good: ${goodAssets} (${(goodAssets/totalAssets*100).toFixed(1)}%)
+Fair: ${fairAssets} (${(fairAssets/totalAssets*100).toFixed(1)}%)
+Critical: ${criticalAssets} (${(criticalAssets/totalAssets*100).toFixed(1)}%)
+
+${'='.repeat(60)}
+ASSET TYPE ANALYSIS
+${'='.repeat(60)}
+${assetsByType.map(item => `${item.type}: ${item.count} assets (Avg Health: ${item.avgHealth}%)`).join('\n')}
+
+${'='.repeat(60)}
+CRITICAL ASSETS REQUIRING ATTENTION
+${'='.repeat(60)}
+${criticalAssets > 0 ? assets.filter(a => a.condition === 'critical').map(asset => 
+                `- ${asset.asset_id} (${asset.type})
+  Location: ${asset.location}
+  Health Score: ${asset.health_score}%
+  Last Maintenance: ${asset.last_maintenance || 'Never'}
+`).join('\n') : 'No critical assets found - All assets in good condition!'}
+
+${'='.repeat(60)}
+MAINTENANCE SCHEDULE (Next 30 Days)
+${'='.repeat(60)}
+${assets.filter(a => a.next_maintenance).filter(a => {
+                const nextMaintenance = new Date(a.next_maintenance!);
+                const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                return nextMaintenance <= thirtyDaysFromNow;
+              }).map(asset => 
+                `- ${asset.asset_id} (${asset.type}) - ${asset.next_maintenance}`
+              ).join('\n') || 'No maintenance scheduled in the next 30 days'}
+
+Report generated by RailFit Asset Management System
+© 2024 Railway Asset Management Solutions`;
+              
+              const reportFileName = `Comprehensive_Asset_Report_${new Date().toISOString().split('T')[0]}.txt`;
+              const reportUri = Paths.cache.uri + reportFileName;
+              await FileSystem.writeAsStringAsync(reportUri, reportContent);
+              
+              Alert.alert(
+                'Report Generated',
+                `Comprehensive report created analyzing ${totalAssets} assets.`,
+                [
+                  { text: 'Share Report', onPress: async () => {
+                    if (await Sharing.isAvailableAsync()) {
+                      await Sharing.shareAsync(reportUri, {
+                        mimeType: 'text/plain',
+                        dialogTitle: 'Comprehensive Railway Asset Report'
+                      });
+                    }
+                  }},
+                  { text: 'OK' }
+                ]
+              );
             }
-          }},
-          { text: 'OK' }
+          },
+          {
+            text: 'Maintenance Report',
+            onPress: async () => {
+              const maintenanceDue = assets.filter(a => {
+                if (!a.next_maintenance) return false;
+                const nextMaintenance = new Date(a.next_maintenance);
+                const today = new Date();
+                return nextMaintenance <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // Due within 7 days
+              });
+              
+              const overdueMaintenance = assets.filter(a => {
+                if (!a.next_maintenance) return false;
+                const nextMaintenance = new Date(a.next_maintenance);
+                return nextMaintenance < new Date();
+              });
+              
+              const maintenanceContent = `MAINTENANCE SCHEDULE REPORT
+Generated: ${new Date().toLocaleString()}
+
+${'='.repeat(50)}
+OVERDUE MAINTENANCE (${overdueMaintenance.length} assets)
+${'='.repeat(50)}
+${overdueMaintenance.map(asset => 
+                `${asset.asset_id} - ${asset.type}
+Location: ${asset.location}
+Due Date: ${asset.next_maintenance}
+Health Score: ${asset.health_score}%
+Days Overdue: ${Math.ceil((new Date().getTime() - new Date(asset.next_maintenance!).getTime()) / (1000 * 60 * 60 * 24))}
+`).join('\n') || 'No overdue maintenance!'}
+
+${'='.repeat(50)}
+UPCOMING MAINTENANCE (Next 7 Days - ${maintenanceDue.length} assets)
+${'='.repeat(50)}
+${maintenanceDue.map(asset => 
+                `${asset.asset_id} - ${asset.type}
+Location: ${asset.location}
+Scheduled: ${asset.next_maintenance}
+Health Score: ${asset.health_score}%
+`).join('\n') || 'No maintenance due in the next 7 days!'}`;
+              
+              const maintenanceFileName = `Maintenance_Report_${new Date().toISOString().split('T')[0]}.txt`;
+              const maintenanceUri = Paths.cache.uri + maintenanceFileName;
+              await FileSystem.writeAsStringAsync(maintenanceUri, maintenanceContent);
+              
+              Alert.alert(
+                'Maintenance Report Generated',
+                `Found ${overdueMaintenance.length} overdue and ${maintenanceDue.length} upcoming maintenance items.`,
+                [
+                  { text: 'Share Report', onPress: async () => {
+                    if (await Sharing.isAvailableAsync()) {
+                      await Sharing.shareAsync(maintenanceUri, {
+                        mimeType: 'text/plain',
+                        dialogTitle: 'Maintenance Schedule Report'
+                      });
+                    }
+                  }},
+                  { text: 'OK' }
+                ]
+              );
+            }
+          }
         ]
       );
     } catch (error) {
@@ -536,7 +798,7 @@ export default function AssetsScreen() {
     try {
       Alert.alert(
         'Export Asset Data',
-        'Choose export format for your asset data.',
+        `Export ${assets.length} assets in your preferred format.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -545,36 +807,100 @@ export default function AssetsScreen() {
               try {
                 const headers = [
                   'asset_id', 'type', 'location', 'status', 'condition', 'health_score',
-                  'install_date', 'next_maintenance', 'serial_number', 'manufacturer',
-                  'model', 'description', 'technical_specs', 'purchase_cost',
-                  'warranty_expiry', 'vendor_id'
+                  'install_date', 'next_maintenance', 'last_maintenance', 'serial_number', 
+                  'manufacturer', 'model', 'description', 'technical_specs', 'purchase_cost',
+                  'warranty_expiry', 'vendor_id', 'certifications'
                 ];
                 
                 const csvContent = [
                   headers.join(','),
                   ...assets.map(asset => headers.map(header => {
-                    const value = asset[header as keyof Asset];
-                    return typeof value === 'string' && value.includes(',') 
-                      ? `"${value.replace(/"/g, '""')}"` 
-                      : value || '';
+                    let value = asset[header as keyof Asset];
+                    if (Array.isArray(value)) {
+                      value = value.join('; ');
+                    }
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                      value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value || '';
                   }).join(','))
                 ].join('\n');
                 
-                const csvFileName = `Assets_Export_${new Date().toISOString().split('T')[0]}.csv`;
-                const csvUri = `${FileSystem.documentDirectory}${csvFileName}`;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const csvFileName = `RailFit_Assets_Export_${timestamp}_${assets.length}records.csv`;
+                const csvUri = Paths.cache.uri + csvFileName;
                 await FileSystem.writeAsStringAsync(csvUri, csvContent);
                 
-                if (await Sharing.isAvailableAsync()) {
-                  await Sharing.shareAsync(csvUri, {
-                    mimeType: 'text/csv',
-                    dialogTitle: 'Asset Data Export'
-                  });
-                }
-                
-                Alert.alert('Success', `${assets.length} assets exported to CSV!`);
+                Alert.alert(
+                  'CSV Export Complete',
+                  `Successfully exported ${assets.length} assets to CSV format.`,
+                  [
+                    {
+                      text: 'Share File',
+                      onPress: async () => {
+                        if (await Sharing.isAvailableAsync()) {
+                          await Sharing.shareAsync(csvUri, {
+                            mimeType: 'text/csv',
+                            dialogTitle: 'RailFit Asset Data Export'
+                          });
+                        }
+                      }
+                    },
+                    { text: 'OK' }
+                  ]
+                );
                 
               } catch (error) {
-                Alert.alert('Error', 'Failed to export CSV data');
+                console.error('CSV Export Error:', error);
+                Alert.alert('Export Error', 'Failed to export CSV data. Please try again.');
+              }
+            }
+          },
+          {
+            text: 'Export as JSON',
+            onPress: async () => {
+              try {
+                const exportData = {
+                  export_info: {
+                    timestamp: new Date().toISOString(),
+                    total_assets: assets.length,
+                    exported_by: 'RailFit Mobile App v1.0',
+                    format: 'JSON'
+                  },
+                  assets: assets.map(asset => ({
+                    ...asset,
+                    export_timestamp: new Date().toISOString()
+                  }))
+                };
+                
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const jsonFileName = `RailFit_Assets_Export_${timestamp}_${assets.length}records.json`;
+                const jsonUri = Paths.cache.uri + jsonFileName;
+                
+                await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(exportData, null, 2));
+                
+                Alert.alert(
+                  'JSON Export Complete',
+                  `Successfully exported ${assets.length} assets to JSON format with metadata.`,
+                  [
+                    {
+                      text: 'Share File',
+                      onPress: async () => {
+                        if (await Sharing.isAvailableAsync()) {
+                          await Sharing.shareAsync(jsonUri, {
+                            mimeType: 'application/json',
+                            dialogTitle: 'RailFit Asset Data Export (JSON)'
+                          });
+                        }
+                      }
+                    },
+                    { text: 'OK' }
+                  ]
+                );
+                
+              } catch (error) {
+                console.error('JSON Export Error:', error);
+                Alert.alert('Export Error', 'Failed to export JSON data. Please try again.');
               }
             }
           }
@@ -972,7 +1298,8 @@ export default function AssetsScreen() {
                             try {
                               // Create a folder for the QR codes
                               const folderName = `QR_Codes_${Date.now()}`;
-                              const folderUri = `${FileSystem.documentDirectory}${folderName}/`;
+                              const documentDir = Paths.document.uri;
+                              const folderUri = `${documentDir}${folderName}/`;
                               await FileSystem.makeDirectoryAsync(folderUri, { intermediates: true });
                               
                               // Generate QR data files for each selected asset
@@ -1120,7 +1447,7 @@ export default function AssetsScreen() {
           animationType="slide"
           presentationStyle="fullScreen"
         >
-          <QRCodeScanner
+          <SimpleQRScanner
             onScanSuccess={handleQRScanSuccess}
             onCancel={handleQRScanCancel}
           />
@@ -1421,44 +1748,90 @@ export default function AssetsScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Asset ID *</Text>
                   <View style={styles.formInput}>
-                    <Text style={styles.formInputPlaceholder}>Auto-generated: AS-{Date.now().toString().slice(-6)}</Text>
+                    <Text style={styles.formInputValue}>Auto-generated: {newAssetForm.asset_id}</Text>
                   </View>
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Asset Type *</Text>
-                  <TouchableOpacity style={styles.formDropdown}>
-                    <Text style={styles.formDropdownText}>Select Asset Type</Text>
+                  <TouchableOpacity 
+                    style={styles.formDropdown}
+                    onPress={() => {
+                      Alert.alert(
+                        'Select Asset Type',
+                        'Choose the type of asset:',
+                        [
+                          ...assetTypes.map(type => ({
+                            text: type,
+                            onPress: () => setNewAssetForm({...newAssetForm, type})
+                          })),
+                          { text: 'Cancel', style: 'cancel' }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={[styles.formDropdownText, newAssetForm.type ? {color: '#1f2937'} : {}]}>
+                      {newAssetForm.type || 'Select Asset Type'}
+                    </Text>
                     <Ionicons name="chevron-down" size={20} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Location *</Text>
-                  <View style={styles.formInput}>
-                    <Text style={styles.formInputPlaceholder}>Enter location</Text>
-                  </View>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Enter location (e.g., Platform A, Track Section 5)"
+                    value={newAssetForm.location}
+                    onChangeText={(text) => setNewAssetForm({...newAssetForm, location: text})}
+                    placeholderTextColor="#9ca3af"
+                  />
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Serial Number</Text>
-                  <View style={styles.formInput}>
-                    <Text style={styles.formInputPlaceholder}>Enter serial number</Text>
-                  </View>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Enter serial number"
+                    value={newAssetForm.serial_number}
+                    onChangeText={(text) => setNewAssetForm({...newAssetForm, serial_number: text})}
+                    placeholderTextColor="#9ca3af"
+                  />
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Manufacturer</Text>
-                  <View style={styles.formInput}>
-                    <Text style={styles.formInputPlaceholder}>Enter manufacturer</Text>
-                  </View>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Enter manufacturer name"
+                    value={newAssetForm.manufacturer}
+                    onChangeText={(text) => setNewAssetForm({...newAssetForm, manufacturer: text})}
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Model</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Enter model number/name"
+                    value={newAssetForm.model}
+                    onChangeText={(text) => setNewAssetForm({...newAssetForm, model: text})}
+                    placeholderTextColor="#9ca3af"
+                  />
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Description</Text>
-                  <View style={[styles.formInput, { minHeight: 80 }]}>
-                    <Text style={styles.formInputPlaceholder}>Enter description</Text>
-                  </View>
+                  <TextInput
+                    style={[styles.formInput, { minHeight: 80, textAlignVertical: 'top' }]}
+                    placeholder="Enter detailed description of the asset"
+                    value={newAssetForm.description}
+                    onChangeText={(text) => setNewAssetForm({...newAssetForm, description: text})}
+                    placeholderTextColor="#9ca3af"
+                    multiline={true}
+                    numberOfLines={3}
+                  />
                 </View>
               </ScrollView>
 
@@ -1470,12 +1843,11 @@ export default function AssetsScreen() {
                   <Text style={[styles.modalActionButtonText, { color: '#ffffff' }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.modalActionButton, { backgroundColor: '#3b82f6' }]}
-                  onPress={() => {
-                    // In a real app, this would save the new asset
-                    alert('New asset would be saved here!');
-                    setShowAddAssetModal(false);
-                  }}
+                  style={[styles.modalActionButton, { 
+                    backgroundColor: (newAssetForm.type && newAssetForm.location) ? '#3b82f6' : '#9ca3af' 
+                  }]}
+                  onPress={saveNewAsset}
+                  disabled={!(newAssetForm.type && newAssetForm.location)}
                 >
                   <Text style={[styles.modalActionButtonText, { color: '#ffffff' }]}>Save Asset</Text>
                 </TouchableOpacity>
@@ -2379,6 +2751,11 @@ const styles = StyleSheet.create({
   formInputPlaceholder: {
     color: '#9ca3af',
     fontSize: 14,
+  },
+  formInputValue: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '500',
   },
   formDropdown: {
     backgroundColor: '#f9fafb',

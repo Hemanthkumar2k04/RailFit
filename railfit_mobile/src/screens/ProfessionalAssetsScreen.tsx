@@ -139,15 +139,45 @@ const AssetsScreen: React.FC = () => {
 
   const handleViewQR = (asset: Asset) => {
     const qrAssetData = {
+      asset_id: `${asset.id}-33e1-443e-8943-6a4a924f177a`,
       id: asset.id,
       type: asset.type,
       location: asset.location,
-      status: asset.status,
+      status: asset.status.toLowerCase(),
+      condition: asset.condition.toLowerCase(),
       healthScore: asset.healthScore,
-      predictedRUL: 120, // Mock data
+      predicted_rul_days: Math.floor(Math.random() * 200) + 50, // Random RUL between 50-250 days
       lastInspection: '2024-08-15',
       nextMaintenance: '2024-11-15',
-      qrVersion: '1.0',
+      serialNumber: `${asset.type.replace(' ', '').toUpperCase()}-${asset.id.slice(-4)}`,
+      manufacturer: 'PadTech Industries',
+      installDate: asset.installDate,
+      qrVersion: '2.0',
+      generated_at: new Date().toISOString(),
+      generated_by: 'RailFit Mobile App',
+      // Comprehensive asset data for QR code
+      assetData: {
+        basicInfo: {
+          id: asset.id,
+          type: asset.type,
+          location: asset.location,
+          status: asset.status,
+          condition: asset.condition,
+          healthScore: asset.healthScore
+        },
+        maintenance: {
+          lastInspection: '2024-08-15',
+          nextMaintenance: '2024-11-15',
+          maintenanceSchedule: asset.healthScore > 90 ? 'Quarterly' : 'Monthly'
+        },
+        technical: {
+          serialNumber: `${asset.type.replace(' ', '').toUpperCase()}-${asset.id.slice(-4)}`,
+          manufacturer: 'PadTech Industries',
+          model: `${asset.type}-Pro-2024`,
+          installDate: asset.installDate,
+          warranty: '24 months'
+        }
+      }
     };
     setSelectedAssetForQR(qrAssetData);
     setQrModalVisible(true);
@@ -173,14 +203,96 @@ const AssetsScreen: React.FC = () => {
         status: 'Active',
       },
       specifications: {
-        model: 'Express-Pro',
-        serialNumber: 'RP-984',
-        manufacturer: 'PadTech',
-        description: 'High-speed rail pad for express train operations',
+        model: `${asset.type}-Pro-2024`,
+        serialNumber: `${asset.type.replace(' ', '').toUpperCase()}-${asset.id.slice(-4)}`,
+        manufacturer: 'PadTech Industries',
+        description: `Professional ${asset.type.toLowerCase()} for railway infrastructure operations`,
+        technicalSpecs: `Load capacity: ${asset.healthScore > 90 ? '25' : '20'} tons, Temperature range: -40°C to +70°C`,
+        warranty: '24 months',
+        certifications: 'ISO 9001, Railway Safety Standards',
       },
     };
     setSelectedAssetForDetails(assetDetailsData);
     setAssetDetailsVisible(true);
+  };
+
+  const handleDownload = (asset: Asset) => {
+    Alert.alert(
+      'Download Asset Data',
+      `Choose format for ${asset.type} - ${asset.id}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Download JSON', 
+          onPress: () => downloadAssetData(asset, 'json') 
+        },
+        { 
+          text: 'Download CSV', 
+          onPress: () => downloadAssetData(asset, 'csv') 
+        },
+      ]
+    );
+  };
+
+  const downloadAssetData = async (asset: Asset, format: 'json' | 'csv') => {
+    try {
+      const assetData = {
+        id: asset.id,
+        type: asset.type,
+        location: asset.location,
+        status: asset.status,
+        condition: asset.condition,
+        healthScore: asset.healthScore,
+        installDate: asset.installDate,
+        lastInspection: '2024-08-15',
+        nextMaintenance: '2024-11-15',
+        manufacturer: 'PadTech Industries',
+        serialNumber: `${asset.type.replace(' ', '').toUpperCase()}-${asset.id.slice(-4)}`,
+        model: `${asset.type}-Pro-2024`,
+        downloadedAt: new Date().toISOString(),
+      };
+
+      let content: string;
+      let fileName: string;
+      let mimeType: string;
+
+      if (format === 'json') {
+        content = JSON.stringify(assetData, null, 2);
+        fileName = `asset_${asset.id}_${new Date().toISOString().slice(0, 10)}.json`;
+        mimeType = 'application/json';
+      } else {
+        // CSV format
+        const headers = Object.keys(assetData).join(',');
+        const values = Object.values(assetData).join(',');
+        content = `${headers}\n${values}`;
+        fileName = `asset_${asset.id}_${new Date().toISOString().slice(0, 10)}.csv`;
+        mimeType = 'text/csv';
+      }
+
+      // For mobile app, we'll simulate download by showing the content
+      Alert.alert(
+        'Download Complete',
+        `Asset data exported as ${format.toUpperCase()}\n\nFile: ${fileName}\n\nData ready for sharing or saving to device.`,
+        [
+          { text: 'OK', style: 'default' },
+          { 
+            text: 'View Data', 
+            onPress: () => Alert.alert('Asset Data', content.slice(0, 500) + (content.length > 500 ? '...' : ''))
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Download Error', 'Failed to export asset data. Please try again.');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Active': return '#10b981';
+      case 'Inactive': return '#6b7280';
+      case 'Maintenance': return '#f59e0b';
+      default: return '#6b7280';
+    }
   };
 
   const renderSummaryCard = (title: string, value: number, subtitle: string, color: string, icon: string) => (
@@ -194,57 +306,85 @@ const AssetsScreen: React.FC = () => {
     </View>
   );
 
-  const renderAssetRow = ({ item }: { item: Asset }) => (
-    <View style={styles.assetRow}>
-      <TouchableOpacity
-        style={styles.checkbox}
-        onPress={() => handleSelectAsset(item.id)}
-      >
-        <View style={[styles.checkboxInner, selectedAssets.includes(item.id) && styles.checkboxSelected]}>
-          {selectedAssets.includes(item.id) && <Text style={styles.checkmark}>✓</Text>}
+  const renderAssetRow = ({ item }: { item: Asset }) => {
+    return (
+      <View style={styles.assetRow}>
+        {/* Checkbox */}
+        <View style={[styles.tableCell, { flex: 0.4 }]}>
+          <TouchableOpacity onPress={() => handleSelectAsset(item.id)}>
+            <View style={[styles.checkboxInner, selectedAssets.includes(item.id) && styles.checkboxSelected]}>
+              {selectedAssets.includes(item.id) && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
 
-      <Text style={styles.assetId}>{item.id}</Text>
-      <Text style={styles.assetType}>{item.type}</Text>
-      <Text style={styles.assetLocation}>{item.location}</Text>
-      
-      <View style={styles.healthScoreContainer}>
-        <View style={[styles.healthScoreBadge, { backgroundColor: getHealthScoreColor(item.healthScore) }]}>
-          <Text style={styles.healthScoreText}>{item.healthScore}</Text>
+        {/* Asset ID */}
+        <View style={[styles.tableCell, { flex: 1.3 }]}>
+          <Text style={styles.assetId}>{item.id}</Text>
+        </View>
+
+        {/* Type */}
+        <View style={[styles.tableCell, { flex: 1.1 }]}>
+          <Text style={styles.assetType}>{item.type}</Text>
+        </View>
+
+        {/* Location */}
+        <View style={[styles.tableCell, { flex: 1.6 }]}>
+          <Text style={styles.assetLocation} numberOfLines={1}>{item.location}</Text>
+        </View>
+
+        {/* Health Score */}
+        <View style={[styles.tableCell, { flex: 0.9 }]}>
+          <View style={[styles.healthScoreBadge, { backgroundColor: getHealthScoreColor(item.healthScore) }]}>
+            <Text style={styles.healthScoreText}>{item.healthScore}</Text>
+          </View>
+        </View>
+
+        {/* Condition */}
+        <View style={[styles.tableCell, { flex: 0.9 }]}>
+          <View style={[styles.conditionBadge, { backgroundColor: getConditionColor(item.condition) }]}>
+            <Text style={styles.conditionText}>{item.condition}</Text>
+          </View>
+        </View>
+
+        {/* Status */}
+        <View style={[styles.tableCell, { flex: 0.8 }]}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status}</Text>
+          </View>
+        </View>
+
+        {/* Install Date */}
+        <View style={[styles.tableCell, { flex: 1 }]}>
+          <Text style={styles.installDate}>{item.installDate}</Text>
+        </View>
+
+        {/* Actions */}
+        <View style={[styles.tableCell, { flex: 1.4 }]}>
+          <View style={styles.actionsContainer}>
+            <View style={styles.actionGroup}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleViewAsset(item)}>
+                <Ionicons name="eye-outline" size={14} color="#6b7280" />
+              </TouchableOpacity>
+              <Text style={styles.actionLabel}>View</Text>
+            </View>
+            <View style={styles.actionGroup}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleViewQR(item)}>
+                <Ionicons name="qr-code-outline" size={14} color="#3b82f6" />
+              </TouchableOpacity>
+              <Text style={styles.actionLabel}>QR</Text>
+            </View>
+            <View style={styles.actionGroup}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleDownload(item)}>
+                <Ionicons name="download-outline" size={14} color="#10b981" />
+              </TouchableOpacity>
+              <Text style={styles.actionLabel}>Download</Text>
+            </View>
+          </View>
         </View>
       </View>
-      
-      <View style={styles.conditionContainer}>
-        <View style={[styles.conditionBadge, { backgroundColor: getConditionColor(item.condition) }]}>
-          <Text style={styles.conditionText}>{item.condition}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.statusContainer}>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{item.status}</Text>
-        </View>
-      </View>
-      
-      <Text style={styles.installDate}>{item.installDate}</Text>
-      
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleViewAsset(item)}>
-          <Ionicons name="eye-outline" size={16} color="#6b7280" />
-          <Text style={styles.actionText}>View</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleViewQR(item)}>
-          <Ionicons name="qr-code-outline" size={16} color="#6b7280" />
-          <Text style={styles.actionText}>QR Code</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Download', `Downloading ${item.id}`)}>
-          <Ionicons name="download-outline" size={16} color="#6b7280" />
-          <Text style={styles.actionText}>Export</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderPagination = () => (
     <View style={styles.paginationContainer}>
@@ -299,19 +439,19 @@ const AssetsScreen: React.FC = () => {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.addButton}>
-              <Ionicons name="add" size={20} color="#ffffff" />
+              <Ionicons name="add" size={18} color="#ffffff" />
               <Text style={styles.addButtonText}>Add New Asset</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.bulkImportButton}>
-              <Ionicons name="cloud-upload-outline" size={20} color="#374151" />
+              <Ionicons name="cloud-upload-outline" size={18} color="#374151" />
               <Text style={styles.bulkImportText}>Bulk Import</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.reportsButton}>
-              <Ionicons name="document-text-outline" size={20} color="#374151" />
+              <Ionicons name="document-text-outline" size={18} color="#374151" />
               <Text style={styles.reportsText}>Generate Reports</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.exportButton}>
-              <Ionicons name="download-outline" size={20} color="#374151" />
+              <Ionicons name="download-outline" size={18} color="#374151" />
               <Text style={styles.exportText}>Export Data</Text>
             </TouchableOpacity>
           </View>
@@ -321,9 +461,9 @@ const AssetsScreen: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Summary Cards */}
         <View style={styles.summaryContainer}>
-          <View style={[styles.summaryCard, { borderLeftColor: '#d1d5db' }]}>
+          <View style={[styles.summaryCard, styles.totalAssetsCard]}>
             <View style={styles.summaryCardIcon}>
-              <Ionicons name="cube-outline" size={24} color="#9ca3af" />
+              <Ionicons name="cube-outline" size={24} color="#d97706" />
             </View>
             <View style={styles.summaryCardContent}>
               <Text style={styles.summaryCardLabel}>Total Assets</Text>
@@ -332,9 +472,9 @@ const AssetsScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={[styles.summaryCard, { borderLeftColor: '#10b981' }]}>
+          <View style={[styles.summaryCard, styles.activeAssetsCard]}>
             <View style={styles.summaryCardIcon}>
-              <Ionicons name="checkmark-circle-outline" size={24} color="#10b981" />
+              <Ionicons name="checkmark-circle" size={24} color="#10b981" />
             </View>
             <View style={styles.summaryCardContent}>
               <Text style={styles.summaryCardLabel}>Active Assets</Text>
@@ -343,9 +483,9 @@ const AssetsScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={[styles.summaryCard, { borderLeftColor: '#f59e0b' }]}>
+          <View style={[styles.summaryCard, styles.maintenanceQueueCard]}>
             <View style={styles.summaryCardIcon}>
-              <Ionicons name="time-outline" size={24} color="#f59e0b" />
+              <Ionicons name="time" size={24} color="#f59e0b" />
             </View>
             <View style={styles.summaryCardContent}>
               <Text style={styles.summaryCardLabel}>Maintenance Queue</Text>
@@ -354,9 +494,9 @@ const AssetsScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={[styles.summaryCard, { borderLeftColor: '#ef4444' }]}>
+          <View style={[styles.summaryCard, styles.criticalAlertsCard]}>
             <View style={styles.summaryCardIcon}>
-              <Ionicons name="alert-circle-outline" size={24} color="#ef4444" />
+              <Ionicons name="alert-circle" size={24} color="#ef4444" />
             </View>
             <View style={styles.summaryCardContent}>
               <Text style={styles.summaryCardLabel}>Critical Alerts</Text>
@@ -504,19 +644,37 @@ const AssetsScreen: React.FC = () => {
         {/* Table Header */}
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
-            <TouchableOpacity style={styles.headerCheckbox} onPress={handleSelectAll}>
-              <View style={[styles.checkboxInner, selectedAssets.length === paginatedAssets.length && styles.checkboxSelected]}>
-                {selectedAssets.length === paginatedAssets.length && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-            </TouchableOpacity>
-            <Text style={[styles.columnHeader, { width: 80 }]}>Asset ID</Text>
-            <Text style={[styles.columnHeader, { width: 70 }]}>Type</Text>
-            <Text style={[styles.columnHeader, { width: 90 }]}>Location</Text>
-            <Text style={[styles.columnHeader, { width: 60, textAlign: 'center' }]}>Health</Text>
-            <Text style={[styles.columnHeader, { width: 80, textAlign: 'center' }]}>Condition</Text>
-            <Text style={[styles.columnHeader, { width: 70, textAlign: 'center' }]}>Status</Text>
-            <Text style={[styles.columnHeader, { width: 80, textAlign: 'center' }]}>Install Date</Text>
-            <Text style={[styles.columnHeader, { flex: 1, textAlign: 'right' }]}>Actions</Text>
+            <View style={[styles.columnHeader, { flex: 0.4 }]}>
+              <TouchableOpacity onPress={handleSelectAll}>
+                <View style={[styles.checkboxInner, selectedAssets.length === paginatedAssets.length && styles.checkboxSelected]}>
+                  {selectedAssets.length === paginatedAssets.length && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.columnHeader, { flex: 1.3 }]}>
+              <Text style={styles.columnHeaderText}>Asset ID</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 1.1 }]}>
+              <Text style={styles.columnHeaderText}>Type</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 1.6 }]}>
+              <Text style={styles.columnHeaderText}>Location</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 0.9 }]}>
+              <Text style={styles.columnHeaderText}>Health Score</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 0.9 }]}>
+              <Text style={styles.columnHeaderText}>Condition</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 0.8 }]}>
+              <Text style={styles.columnHeaderText}>Status</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 1 }]}>
+              <Text style={styles.columnHeaderText}>Install Date</Text>
+            </View>
+            <View style={[styles.columnHeader, { flex: 1.4 }]}>
+              <Text style={styles.columnHeaderText}>Actions</Text>
+            </View>
           </View>
 
           {/* Asset Rows */}
@@ -727,25 +885,25 @@ const styles = StyleSheet.create({
 
   // Summary Cards
   summaryContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    gap: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
   },
   summaryCard: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 8,
-    padding: 20,
-    borderLeftWidth: 4,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
-    minHeight: 100,
+    elevation: 2,
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -878,35 +1036,46 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fafbfc',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 2,
+    borderBottomColor: '#d1d5db',
   },
   headerCheckbox: {
     width: 24,
     marginRight: 16,
   },
   columnHeader: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#4b5563',
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  columnHeaderText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#374151',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
   
   // Asset Row Styles
   assetRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f9fafb',
-    minHeight: 70,
+    borderBottomColor: '#e5e7eb',
+    minHeight: 72,
     backgroundColor: '#ffffff',
+  },
+  tableCell: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   checkbox: {
     width: 24,
@@ -931,28 +1100,78 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  assetInfoSection: {
+    width: 140,
+    marginRight: 16,
+    justifyContent: 'center',
+  },
+  assetMainInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   assetId: {
-    width: 80,
-    fontSize: 12,
+    fontSize: 14,
     color: '#111827',
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.2,
   },
   assetType: {
-    width: 70,
-    fontSize: 12,
-    color: '#4b5563',
+    fontSize: 13,
+    color: '#374151',
     fontWeight: '500',
   },
   assetLocation: {
-    width: 90,
-    fontSize: 11,
+    fontSize: 12,
     color: '#4b5563',
     fontWeight: '500',
-    lineHeight: 14,
+    lineHeight: 16,
+  },
+  assetMetrics: {
+    width: 160,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginRight: 16,
+  },
+  assetActions: {
+    width: 100,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  installDate: {
+    fontSize: 10,
+    color: '#9ca3af',
+    fontWeight: '500',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+  },
+  actionGroup: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 30,
+  },
+  actionLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontSize: 7,
+    color: '#6b7280',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 1,
+    lineHeight: 8,
   },
   healthScoreContainer: {
-    width: 60,
     alignItems: 'center',
   },
   healthScoreBadge: {
@@ -969,7 +1188,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   conditionContainer: {
-    width: 80,
     alignItems: 'center',
   },
   conditionBadge: {
@@ -986,7 +1204,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   statusContainer: {
-    width: 70,
     alignItems: 'center',
   },
   statusBadge: {
@@ -1003,31 +1220,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  installDate: {
-    width: 80,
-    fontSize: 11,
-    color: '#4b5563',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  actionsContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 4,
-    justifyContent: 'flex-end',
-  },
+
   actionButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    gap: 4,
-    minWidth: 70,
     justifyContent: 'center',
+    width: 30,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    marginVertical: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   actionIcon: {
     fontSize: 14,
@@ -1153,33 +1360,68 @@ const styles = StyleSheet.create({
     color: '#fecaca',
   },
   summaryCardIcon: {
-    width: 50,
-    height: 50,
-    backgroundColor: '#f9fafb',
+    width: 40,
+    height: 40,
+    backgroundColor: '#f8fafc',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   summaryCardContent: {
     flex: 1,
   },
   summaryCardLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#64748b',
     fontWeight: '500',
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   summaryCardValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: '#0f172a',
     marginBottom: 2,
+    letterSpacing: -0.3,
   },
   summaryCardSubtext: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: 11,
+    color: '#94a3b8',
     fontWeight: '400',
+    letterSpacing: 0.1,
+  },
+  
+  // Individual Card Styles
+  totalAssetsCard: {
+    borderLeftColor: '#6b7280',
+    borderLeftWidth: 4,
+  },
+  activeAssetsCard: {
+    borderLeftColor: '#10b981',
+    borderLeftWidth: 4,
+  },
+  maintenanceQueueCard: {
+    borderLeftColor: '#f59e0b',
+    borderLeftWidth: 4,
+  },
+  criticalAlertsCard: {
+    borderLeftColor: '#ef4444',
+    borderLeftWidth: 4,
+  },
+  activeWarningsCard: {
+    borderLeftColor: '#f59e0b',
+    borderLeftWidth: 4,
+  },
+  resolvedIssuesCard: {
+    borderLeftColor: '#10b981',
+    borderLeftWidth: 4,
+  },
+  responseTimeCard: {
+    borderLeftColor: '#3b82f6',
+    borderLeftWidth: 4,
   },
 
   // Search and Filter Styles
@@ -1286,6 +1528,14 @@ const styles = StyleSheet.create({
   },
   leftControls: {
     flex: 1,
+  },
+  qrButton: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6',
+  },
+  downloadButton: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#10b981',
   },
 });
 

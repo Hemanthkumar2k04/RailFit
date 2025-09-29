@@ -24,6 +24,9 @@ const AlertsScreen = lazy(() => import('./src/screens/ProfessionalAlertsScreen')
 const SettingsScreen = lazy(() => import('./src/screens/ProfessionalSettingsScreen'));
 const LoginScreen = lazy(() => import('./src/screens/LoginScreen'));
 
+// Import ScanScreen normally to avoid lazy loading issues with camera components
+import ScanScreen from './src/screens/ScanScreen';
+
 interface SidebarItem {
   id: string;
   title: string;
@@ -34,10 +37,11 @@ interface SidebarItem {
 const sidebarItems: SidebarItem[] = [
   { id: '1', title: 'Dashboard', icon: 'grid-outline', screen: 'Dashboard' },
   { id: '2', title: 'Assets', icon: 'cube-outline', screen: 'Assets' },
-  { id: '3', title: 'Inspections', icon: 'search-outline', screen: 'Inspections' },
-  { id: '4', title: 'Analytics', icon: 'analytics-outline', screen: 'Analytics' },
-  { id: '5', title: 'Alerts', icon: 'notifications-outline', screen: 'Alerts' },
-  { id: '6', title: 'Settings', icon: 'settings-outline', screen: 'Settings' },
+  { id: '3', title: 'QR Scan', icon: 'qr-code-outline', screen: 'Scan' },
+  { id: '4', title: 'Inspections', icon: 'search-outline', screen: 'Inspections' },
+  { id: '5', title: 'Analytics', icon: 'analytics-outline', screen: 'Analytics' },
+  { id: '6', title: 'Alerts', icon: 'notifications-outline', screen: 'Alerts' },
+  { id: '7', title: 'Settings', icon: 'settings-outline', screen: 'Settings' },
 ];
 
 // Loading component for better UX during screen transitions
@@ -81,6 +85,7 @@ export default function App() {
     const screenComponents = {
       Dashboard: () => <DashboardScreen navigation={mockNavigation as any} />,
       Assets: () => <AssetsScreen />,
+      Scan: () => <ScanScreen navigation={mockNavigation as any} />,
       Inspections: () => <InspectionsScreen />,
       Analytics: () => <AnalyticsScreen />,
       Alerts: () => <AlertsScreen />,

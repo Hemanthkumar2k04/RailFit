@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
@@ -15,29 +16,44 @@ interface QRCodeModalProps {
   visible: boolean;
   onClose: () => void;
   assetData: {
+    asset_id: string;
     id: string;
     type: string;
     location: string;
     status: string;
     healthScore: number;
-    predictedRUL: number;
+    predicted_rul_days: number;
     lastInspection: string;
     nextMaintenance: string;
     qrVersion: string;
+    generated_at: string;
+    sqlData?: {
+      table: string;
+      query: string;
+      fields: any;
+    };
   };
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, onClose, assetData }) => {
-  const qrCodeData = JSON.stringify({
-    id: assetData.id,
+  const [activeTab, setActiveTab] = useState<'qr' | 'sql' | 'json'>('qr');
+  
+  const jsonData = {
+    asset_id: assetData.asset_id,
     type: assetData.type,
     location: assetData.location,
     status: assetData.status,
-    version: assetData.qrVersion,
-    generated: new Date().toISOString(),
-  });
+    health_score: assetData.healthScore,
+    predicted_rul_days: assetData.predicted_rul_days,
+    last_inspection: assetData.lastInspection,
+    next_maintenance: assetData.nextMaintenance,
+    generated_at: assetData.generated_at,
+    qr_version: assetData.qrVersion
+  };
+
+  const qrCodeData = JSON.stringify(jsonData);
 
   const handleDownloadPNG = () => {
     // In a real app, you'd implement PNG download functionality
@@ -62,6 +78,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, onClose, assetData }
     }
   };
 
+  const sqlQuery = assetData.sqlData?.query || `SELECT * FROM assets WHERE asset_id = '${assetData.asset_id}'`;
+
   return (
     <Modal
       visible={visible}
@@ -78,94 +96,158 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, onClose, assetData }
               <View style={styles.iconContainer}>
                 <Ionicons name="qr-code" size={20} color="#374151" />
               </View>
-              <Text style={styles.headerTitle}>QR Code for Rail Pad</Text>
+              <Text style={styles.headerTitle}>Asset QR Code & Data</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
           </View>
 
+          {/* Tab Navigation */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'qr' && styles.activeTab]}
+              onPress={() => setActiveTab('qr')}
+            >
+              <Text style={[styles.tabText, activeTab === 'qr' && styles.activeTabText]}>QR Code</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'sql' && styles.activeTab]}
+              onPress={() => setActiveTab('sql')}
+            >
+              <Text style={[styles.tabText, activeTab === 'sql' && styles.activeTabText]}>SQL Data</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'json' && styles.activeTab]}
+              onPress={() => setActiveTab('json')}
+            >
+              <Text style={[styles.tabText, activeTab === 'json' && styles.activeTabText]}>JSON Data</Text>
+            </TouchableOpacity>
+          </View>
+
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* QR Code Display */}
-            <View style={styles.qrCodeContainer}>
-              <View style={styles.qrCodeWrapper}>
-                <QRCode
-                  value={qrCodeData}
-                  size={200}
-                  color="#000000"
-                  backgroundColor="#ffffff"
-                />
-              </View>
-            </View>
-
-            {/* Download Buttons */}
-            <View style={styles.downloadContainer}>
-              <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPNG}>
-                <Ionicons name="download-outline" size={16} color="#3b82f6" />
-                <Text style={styles.downloadButtonText}>Download PNG</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadSVG}>
-                <Ionicons name="download-outline" size={16} color="#3b82f6" />
-                <Text style={styles.downloadButtonText}>Download SVG</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Asset Data Section */}
-            <View style={styles.dataSection}>
-              <View style={styles.dataSectionHeader}>
-                <Ionicons name="eye-outline" size={16} color="#6b7280" />
-                <Text style={styles.dataSectionTitle}>QR Code Data</Text>
-              </View>
-
-              <View style={styles.dataGrid}>
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Asset ID:</Text>
-                  <Text style={styles.dataValue}>{assetData.id}</Text>
-                </View>
-
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Type:</Text>
-                  <Text style={styles.dataValue}>{assetData.type}</Text>
-                </View>
-
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Location:</Text>
-                  <Text style={styles.dataValue}>{assetData.location}</Text>
-                </View>
-
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Status:</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assetData.status) }]}>
-                    <Text style={styles.statusText}>{assetData.status}</Text>
+            {activeTab === 'qr' && (
+              <>
+                {/* QR Code Display */}
+                <View style={styles.qrCodeContainer}>
+                  <View style={styles.qrCodeWrapper}>
+                    <QRCode
+                      value={qrCodeData}
+                      size={200}
+                      color="#000000"
+                      backgroundColor="#ffffff"
+                    />
                   </View>
                 </View>
 
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Health Score:</Text>
-                  <Text style={styles.dataValue}>{assetData.healthScore}</Text>
+                {/* Download Buttons */}
+                <View style={styles.downloadContainer}>
+                  <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPNG}>
+                    <Ionicons name="download-outline" size={16} color="#3b82f6" />
+                    <Text style={styles.downloadButtonText}>Download PNG</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadSVG}>
+                    <Ionicons name="download-outline" size={16} color="#3b82f6" />
+                    <Text style={styles.downloadButtonText}>Download SVG</Text>
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Predicted RUL (Days):</Text>
-                  <Text style={styles.dataValue}>{assetData.predictedRUL}</Text>
-                </View>
+                {/* Asset Data Section */}
+                <View style={styles.dataSection}>
+                  <View style={styles.dataSectionHeader}>
+                    <Ionicons name="eye-outline" size={16} color="#6b7280" />
+                    <Text style={styles.dataSectionTitle}>Asset Information</Text>
+                  </View>
 
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Last Inspection:</Text>
-                  <Text style={styles.dataValue}>{assetData.lastInspection}</Text>
-                </View>
+                  <View style={styles.dataGrid}>
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Asset ID:</Text>
+                      <Text style={styles.dataValue}>{assetData.asset_id}</Text>
+                    </View>
 
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>Next Maintenance:</Text>
-                  <Text style={styles.dataValue}>{assetData.nextMaintenance}</Text>
-                </View>
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Type:</Text>
+                      <Text style={styles.dataValue}>{assetData.type}</Text>
+                    </View>
 
-                <View style={styles.dataRow}>
-                  <Text style={styles.dataLabel}>QR Version:</Text>
-                  <Text style={styles.dataValue}>{assetData.qrVersion}</Text>
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Location:</Text>
+                      <Text style={styles.dataValue}>{assetData.location}</Text>
+                    </View>
+
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Status:</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assetData.status) }]}>
+                        <Text style={styles.statusText}>{assetData.status}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Health Score:</Text>
+                      <Text style={styles.dataValue}>{assetData.healthScore}%</Text>
+                    </View>
+
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Predicted RUL:</Text>
+                      <Text style={styles.dataValue}>{assetData.predicted_rul_days} days</Text>
+                    </View>
+
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Last Inspection:</Text>
+                      <Text style={styles.dataValue}>{assetData.lastInspection}</Text>
+                    </View>
+
+                    <View style={styles.dataRow}>
+                      <Text style={styles.dataLabel}>Next Maintenance:</Text>
+                      <Text style={styles.dataValue}>{assetData.nextMaintenance}</Text>
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
+
+            {activeTab === 'sql' && (
+              <View style={styles.dataSection}>
+                <View style={styles.dataSectionHeader}>
+                  <Ionicons name="server-outline" size={16} color="#6b7280" />
+                  <Text style={styles.dataSectionTitle}>SQL Data Structure</Text>
+                </View>
+                
+                <View style={styles.sqlContainer}>
+                  <Text style={styles.sqlLabel}>Table: {assetData.sqlData?.table || 'assets'}</Text>
+                  
+                  <Text style={styles.sqlLabel}>Query:</Text>
+                  <View style={styles.codeBlock}>
+                    <Text style={styles.codeText}>{sqlQuery}</Text>
+                  </View>
+                  
+                  <Text style={styles.sqlLabel}>Field Mappings:</Text>
+                  <View style={styles.fieldMappings}>
+                    {Object.entries(jsonData).map(([key, value]) => (
+                      <View key={key} style={styles.fieldRow}>
+                        <Text style={styles.fieldKey}>{key}:</Text>
+                        <Text style={styles.fieldValue}>{String(value)}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
+
+            {activeTab === 'json' && (
+              <View style={styles.dataSection}>
+                <View style={styles.dataSectionHeader}>
+                  <Ionicons name="code-outline" size={16} color="#6b7280" />
+                  <Text style={styles.dataSectionTitle}>JSON Data Format</Text>
+                </View>
+                
+                <View style={styles.codeBlock}>
+                  <Text style={styles.codeText}>
+                    {JSON.stringify(jsonData, null, 2)}
+                  </Text>
+                </View>
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -311,6 +393,85 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'lowercase',
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#3b82f6',
+    backgroundColor: '#ffffff',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  activeTabText: {
+    color: '#3b82f6',
+    fontWeight: '600',
+  },
+  // SQL and JSON styles
+  sqlContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 16,
+  },
+  sqlLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  codeBlock: {
+    backgroundColor: '#1f2937',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 12,
+  },
+  codeText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#e5e7eb',
+    lineHeight: 16,
+  },
+  fieldMappings: {
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  fieldKey: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  fieldValue: {
+    fontSize: 12,
+    color: '#6b7280',
+    flex: 2,
+    textAlign: 'right',
   },
 });
 
