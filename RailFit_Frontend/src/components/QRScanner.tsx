@@ -13,6 +13,7 @@ const loadQrScanner = async () => {
   }
 };
 
+
 interface QRScannerProps {
   onScan: (result: string) => void;
   onClose: () => void;
