@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, CameraOff } from 'lucide-react';
 
-// Dynamic import for better compatibility
+// QR Scanner import
+import QrScanner from 'qr-scanner';
+
 const loadQrScanner = async () => {
   if (typeof window === 'undefined') return null;
   try {
-    const module = await import('qr-scanner');
-    return module.default;
+    return QrScanner;
   } catch (error) {
     console.error('Failed to load QR scanner:', error);
     return null;

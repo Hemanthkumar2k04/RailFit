@@ -1,12 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
     // PWA plugin removed - no service worker or manifest injection
   ],
   resolve: {
