@@ -18,13 +18,23 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
+      external: [],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom']
         }
       }
-    }
+    },
+    target: 'esnext',
+    minify: 'esbuild'
+  },
+  optimizeDeps: {
+    exclude: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-x64-musl'],
+    include: ['qr-scanner']
+  },
+  define: {
+    global: 'globalThis'
   },
   server: {
     open: true

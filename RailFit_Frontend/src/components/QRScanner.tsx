@@ -1,6 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import QrScanner from 'qr-scanner';
 import { X, Camera, CameraOff } from 'lucide-react';
+
+// Dynamic import for better compatibility
+const loadQrScanner = async () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const module = await import('qr-scanner');
+    return module.default;
+  } catch (error) {
+    console.error('Failed to load QR scanner:', error);
+    return null;
+  }
+};
 
 interface QRScannerProps {
   onScan: (result: string) => void;
@@ -10,7 +21,7 @@ interface QRScannerProps {
 
 export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const scannerRef = useRef<QrScanner | null>(null);
+  const scannerRef = useRef<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCamera, setHasCamera] = useState(true);
@@ -33,6 +44,12 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
       setError(null);
       setIsScanning(true);
 
+      // Load QR Scanner dynamically
+      const QrScanner = await loadQrScanner();
+      if (!QrScanner) {
+        throw new Error('QR Scanner not available');
+      }
+
       // Check if camera is available
       const hasCamera = await QrScanner.hasCamera();
       setHasCamera(hasCamera);
@@ -44,7 +61,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
       if (videoRef.current && !scannerRef.current) {
         scannerRef.current = new QrScanner(
           videoRef.current,
-          (result) => {
+          (result: any) => {
             console.log('QR Code scanned:', result.data);
             onScan(result.data);
             stopScanner();
