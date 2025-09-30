@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { API_ENDPOINTS } from "@/config/api";
+
 
 type Alert = {
   id: number;
@@ -8,43 +7,48 @@ type Alert = {
   affected: string;
 };
 
+// Mock data for alerts
+const mockAlerts: Alert[] = [
+  {
+    id: 1,
+    type: "Critical",
+    message: "Track misalignment detected near Sector 12.",
+    affected: "Track #45"
+  },
+  {
+    id: 2,
+    type: "Warning",
+    message: "Inspection overdue by 3 days.",
+    affected: "Bridge #7"
+  },
+  {
+    id: 3,
+    type: "Critical",
+    message: "Signal failure detected, requires immediate attention.",
+    affected: "Signal Tower A"
+  },
+  {
+    id: 4,
+    type: "Warning",
+    message: "Unusual vibration levels reported during inspection.",
+    affected: "Track #102"
+  },
+  {
+    id: 5,
+    type: "Critical",
+    message: "Overheating reported in axle sensor.",
+    affected: "Train Unit 21"
+  },
+  {
+    id: 6,
+    type: "Warning",
+    message: "Loose fastening detected in sleeper joint.",
+    affected: "Track #78"
+  },
+];
+
 export default function Alerts() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        console.log('Fetching alerts from:', API_ENDPOINTS.ALERTS.BASE);
-        const res = await fetch(API_ENDPOINTS.ALERTS.BASE);
-        console.log('Response:', res.status, res.statusText);
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
-        const data = await res.json();
-        console.log('Fetched alerts:', data);
-        
-        if (Array.isArray(data)) {
-          setAlerts(data);
-        } else {
-          console.error('Data is not an array:', data);
-          setAlerts([]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch alerts:', err);
-        setAlerts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchAlerts();
-  }, []);
-
-  if (loading) return <div>Loading alerts...</div>;
-  console.log(API_ENDPOINTS.ALERTS.BASE);
+  const alerts = mockAlerts;
 
   if (!alerts.length) return <div>No alerts.</div>;
 
