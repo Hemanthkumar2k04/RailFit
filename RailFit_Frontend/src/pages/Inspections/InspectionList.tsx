@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Camera, Upload, Calendar, User, MapPin, AlertTriangle, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { Camera, Upload, Calendar, User, MapPin, AlertTriangle, CheckCircle, Clock, TrendingUp, QrCode } from "lucide-react";
 import { API_ENDPOINTS } from "@/config/api";
+import QRScanner from "@/components/QRScanner";
 
 type Inspection = {
   inspection_id: string;
@@ -72,6 +73,50 @@ export default function InspectionsPage() {
     notes: ''
   });
 
+  // QR Scanner state
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection utility
+  const detectMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (window.innerWidth <= 768);
+  };
+
+  // QR Code scan handler
+  const handleQRScan = (scannedData: string) => {
+    console.log('QR Code scanned:', scannedData);
+    
+    // Extract asset ID from QR code data
+    // Assuming QR code contains asset ID directly or in a specific format
+    let assetId = scannedData;
+    
+    // If QR code contains JSON or specific format, parse it
+    try {
+      const parsed = JSON.parse(scannedData);
+      if (parsed.asset_id) {
+        assetId = parsed.asset_id;
+      } else if (parsed.assetId) {
+        assetId = parsed.assetId;
+      } else if (parsed.id) {
+        assetId = parsed.id;
+      }
+    } catch (e) {
+      // If it's not JSON, treat as plain asset ID
+      // Remove any prefix like "AST-" or similar if needed
+      assetId = scannedData.trim();
+    }
+    
+    // Update form data with scanned asset ID
+    setFormData(prev => ({ ...prev, asset_id: assetId }));
+    
+    // Trigger asset details fetch
+    handleAssetIdChange({ target: { value: assetId } } as any);
+    
+    // Close QR scanner
+    setShowQRScanner(false);
+  };
+
   // Get auth token from localStorage
   const getAuthToken = () => {
     return localStorage.getItem('jwt_token');
@@ -82,6 +127,12 @@ export default function InspectionsPage() {
   useEffect(() => {
     fetchInspections();
     fetchAnalytics();
+    setIsMobile(detectMobile());
+    
+    // Add resize listener to detect mobile on window resize
+    const handleResize = () => setIsMobile(detectMobile());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchInspections = async () => {
@@ -495,7 +546,7 @@ export default function InspectionsPage() {
             </div>
       {/* Inspection Details Modal */}
       {selectedInspection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Inspection Details</h2>
@@ -577,7 +628,7 @@ export default function InspectionsPage() {
 
       {/* Enhanced Inspection Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-25 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">AI-Powered Asset Inspection</h2>
@@ -585,6 +636,29 @@ export default function InspectionsPage() {
             </div>
 
             <form onSubmit={handleCreateInspection} className="p-6 space-y-6">
+              {/* QR Scanner for Mobile - Top of Modal */}
+              {isMobile && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <QrCode className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <h4 className="text-sm font-medium text-blue-900">Quick QR Scan</h4>
+                        <p className="text-xs text-blue-700">Scan asset QR code to auto-fill Asset ID</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowQRScanner(true)}
+                      className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Scan QR
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Asset Information Section */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                 <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
@@ -597,14 +671,25 @@ export default function InspectionsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Asset ID *
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.asset_id}
-                      onChange={handleAssetIdChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., AST-001"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={formData.asset_id}
+                        onChange={handleAssetIdChange}
+                        className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., AST-001"
+                      />
+                      {/* QR Scanner button for desktop or as secondary option */}
+                      <button
+                        type="button"
+                        onClick={() => setShowQRScanner(true)}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                        title="Scan QR Code"
+                      >
+                        <QrCode className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -788,6 +873,12 @@ export default function InspectionsPage() {
           )}
         </div>
       )}
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={showQRScanner}
+        onScan={handleQRScan}
+        onClose={() => setShowQRScanner(false)}
+      />
     </div>
   );
 }
