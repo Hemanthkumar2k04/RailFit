@@ -2,7 +2,7 @@ import {
   BookIcon,
   InfoIcon,
   LifeBuoyIcon,
-  MessageCircleMoreIcon,
+  MessageCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -56,7 +56,7 @@ export default function InfoMenu() {
           asChild
         >
           <a href="#">
-            <MessageCircleMoreIcon
+            <MessageCircle
               size={16}
               className="opacity-60"
               aria-hidden="true"
