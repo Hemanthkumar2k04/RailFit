@@ -44,72 +44,82 @@ class Token(BaseModel):
     user: User
 
 async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
-    """Get user by email using direct database query"""
-    from app.core.database import AsyncSessionLocal
-    from sqlalchemy import text
-    
-    async with AsyncSessionLocal() as session:
-        try:
-            result = await session.execute(
-                text("SELECT user_id, email, name, role, password_hash FROM users WHERE email = :email"),
-                {"email": email}
-            )
-            user_row = result.fetchone()
+    """Get user by email using Supabase REST API"""
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
             
-            if user_row:
-                # Convert to dictionary
-                return {
-                    "user_id": str(user_row.user_id),
-                    "email": user_row.email,
-                    "name": user_row.name,
-                    "role": user_row.role,
-                    "password_hash": user_row.password_hash
-                }
+            # Use Supabase REST API with filter
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/users?email=eq.{email}",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                users = response.json()
+                if users:
+                    user = users[0]  # Should be exactly one user
+                    return {
+                        "user_id": user["user_id"],
+                        "email": user["email"],
+                        "name": user["name"],
+                        "role": user["role"],
+                        "password_hash": user.get("password_hash")
+                    }
             return None
-        except Exception as e:
-            print(f"Database error in get_user_by_email: {e}")
-            return None
+    except Exception as e:
+        logger.error(f"Error in get_user_by_email: {e}")
+        return None
 
 async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
-    """Get user by ID using direct database query"""
-    from app.core.database import AsyncSessionLocal
-    from sqlalchemy import text
-    
-    async with AsyncSessionLocal() as session:
-        try:
-            result = await session.execute(
-                text("SELECT user_id, email, name, role, password_hash FROM users WHERE user_id = :user_id"),
-                {"user_id": user_id}
-            )
-            user_row = result.fetchone()
+    """Get user by ID using Supabase REST API"""
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
             
-            if user_row:
-                # Convert to dictionary
-                return {
-                    "user_id": str(user_row.user_id),
-                    "email": user_row.email,
-                    "name": user_row.name,
-                    "role": user_row.role,
-                    "password_hash": user_row.password_hash
-                }
+            # Use Supabase REST API with filter
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/users?user_id=eq.{user_id}",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                users = response.json()
+                if users:
+                    user = users[0]  # Should be exactly one user
+                    return {
+                        "user_id": user["user_id"],
+                        "email": user["email"],
+                        "name": user["name"],
+                        "role": user["role"],
+                        "password_hash": user.get("password_hash")
+                    }
             return None
-        except Exception as e:
-            print(f"Database error in get_user_by_id: {e}")
-            return None
+    except Exception as e:
+        logger.error(f"Error in get_user_by_id: {e}")
+        return None
 
 async def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     """Authenticate user with email and password"""
     user = await get_user_by_email(email)
     if not user:
         return None
-    
+    # For demo purposes, also accept railway123 for all users
+    if password == "railway123":
+        return user
     # Check against the actual hashed password in database
     if user.get("password_hash") and verify_password(password, user["password_hash"]):
         return user
     
-    # For demo purposes, also accept railway123 for all users
-    if password == "railway123":
-        return user
+    
     
     return None
 
