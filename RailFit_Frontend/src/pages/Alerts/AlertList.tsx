@@ -13,12 +13,34 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   fetch(API_ENDPOINTS.ALERTS.BASE) 
-      .then(res => res.json())
-      .then(data => {
-        setAlerts(Array.isArray(data) ? data : []);
+    const fetchAlerts = async () => {
+      try {
+        console.log('Fetching alerts from:', API_ENDPOINTS.ALERTS.BASE);
+        const res = await fetch(API_ENDPOINTS.ALERTS.BASE);
+        console.log('Response:', res.status, res.statusText);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        console.log('Fetched alerts:', data);
+        
+        if (Array.isArray(data)) {
+          setAlerts(data);
+        } else {
+          console.error('Data is not an array:', data);
+          setAlerts([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch alerts:', err);
+        setAlerts([]);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchAlerts();
   }, []);
 
   if (loading) return <div>Loading alerts...</div>;
