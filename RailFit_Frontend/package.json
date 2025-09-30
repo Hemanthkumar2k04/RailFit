@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
