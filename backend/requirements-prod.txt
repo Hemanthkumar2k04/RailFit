@@ -64,5 +64,6 @@ postgrest>=0.16.0
 click==8.2.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
+reportlab==4.0.7
 
 # Production-specific: No watchfiles (dev-only hot reload)

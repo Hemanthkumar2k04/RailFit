@@ -196,6 +196,58 @@ async def update_asset_health_score(client: httpx.AsyncClient, headers: dict, as
         print(f"❌ Error updating asset health score: {str(e)}")
         # Don't raise exception - health score update failure shouldn't break inspection creation
 
+async def update_asset_last_inspection_date(client: httpx.AsyncClient, headers: dict, asset_id: str, inspection_date: str):
+    """Update asset's last inspection date in metadata"""
+    try:
+        print(f"📅 Updating last inspection date for asset {asset_id}")
+        
+        # Get current asset to read existing metadata
+        asset_response = await client.get(
+            f"{SUPABASE_URL}/rest/v1/assets",
+            headers=headers,
+            params={
+                "select": "metadata",
+                "asset_id": f"eq.{asset_id}"
+            }
+        )
+        
+        if asset_response.status_code == 200:
+            assets = asset_response.json()
+            if assets:
+                current_metadata = assets[0].get('metadata', {}) or {}
+                
+                # Update metadata with last inspection date
+                updated_metadata = {
+                    **current_metadata,
+                    "last_inspection": inspection_date,
+                    "last_inspection_date": inspection_date  # Alternate key for compatibility
+                }
+                
+                # Update asset with new metadata
+                update_response = await client.patch(
+                    f"{SUPABASE_URL}/rest/v1/assets",
+                    headers=headers,
+                    params={"asset_id": f"eq.{asset_id}"},
+                    json={
+                        "metadata": updated_metadata,
+                        "updated_at": datetime.utcnow().isoformat() + "Z"
+                    }
+                )
+                
+                if update_response.status_code == 204:
+                    print(f"✅ Asset last inspection date updated successfully to {inspection_date}")
+                else:
+                    print(f"⚠️ Failed to update asset last inspection date: {update_response.status_code}")
+                    print(f"⚠️ Response: {update_response.text}")
+            else:
+                print(f"⚠️ Asset {asset_id} not found for last inspection date update")
+        else:
+            print(f"⚠️ Failed to fetch current asset: {asset_response.status_code}")
+            
+    except Exception as e:
+        print(f"❌ Error updating asset last inspection date: {str(e)}")
+        # Don't raise exception - metadata update failure shouldn't break inspection creation
+
 @router.post("")
 async def create_inspection(
     asset_id: str = Form(...),
@@ -346,6 +398,9 @@ async def create_inspection(
                 try:
                     created_inspection = response.json()
                     print(f"✅ Inspection created successfully: {inspection_id}")
+                    
+                    # Update asset last inspection date
+                    await update_asset_last_inspection_date(client, headers, asset_id, current_time)
                     
                     # Update asset health score based on AI prediction
                     if ai_prediction and ai_prediction.get('prediction') != 'Error':

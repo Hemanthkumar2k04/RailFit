@@ -643,6 +643,21 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
         }).format(amount)
     }
 
+    function getStatusColor(status: string) {
+        switch (status?.toLowerCase()) {
+            case 'active':
+                return 'bg-green-100 text-green-800 border-green-200'
+            case 'under_maintenance':
+                return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+            case 'retired':
+                return 'bg-gray-100 text-gray-800 border-gray-200'
+            case 'not_installed':
+                return 'bg-blue-100 text-blue-800 border-blue-200'
+            default:
+                return 'bg-gray-100 text-gray-800 border-gray-200'
+        }
+    }
+
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -681,7 +696,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                 <div>
                                     <span className="text-sm font-medium text-gray-500">Status</span>
                                     <div className="mt-1">
-                                        <Badge variant={asset.status === 'active' ? 'default' : 'outline'}>
+                                        <Badge className={`${getStatusColor(asset.status)} inline-flex w-fit transition-colors`}>
                                             {asset.status.charAt(0).toUpperCase() + asset.status.slice(1).replace('_', ' ')}
                                         </Badge>
                                     </div>
@@ -1120,6 +1135,58 @@ export default function AssetList() {
         fetchAssets(1, searchTerm, filters)
     }, [filters])
 
+    // Generate comprehensive PDF report
+    const generateReport = async () => {
+        try {
+            const token = localStorage.getItem('jwt_token')
+            if (!token) {
+                throw new Error('No authentication token found')
+            }
+
+            // Show loading state
+            const loadingToast = document.createElement('div')
+            loadingToast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg z-50'
+            loadingToast.textContent = 'Generating report...'
+            document.body.appendChild(loadingToast)
+
+            const response = await apiCall(`${API_ENDPOINTS.ASSETS.BASE}/generate-report`)
+
+            if (!response.ok) {
+                throw new Error(`Failed to generate report: ${response.status}`)
+            }
+
+            // Get the PDF blob
+            const blob = await response.blob()
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `RailFit_Report_${new Date().toISOString().split('T')[0]}.pdf`
+            document.body.appendChild(a)
+            a.click()
+            
+            // Cleanup
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            document.body.removeChild(loadingToast)
+
+            // Show success message
+            const successToast = document.createElement('div')
+            successToast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50'
+            successToast.textContent = 'Report downloaded successfully!'
+            document.body.appendChild(successToast)
+            setTimeout(() => document.body.removeChild(successToast), 3000)
+        } catch (error) {
+            console.error('Error generating report:', error)
+            const errorToast = document.createElement('div')
+            errorToast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50'
+            errorToast.textContent = 'Failed to generate report'
+            document.body.appendChild(errorToast)
+            setTimeout(() => document.body.removeChild(errorToast), 3000)
+        }
+    }
+
 
 
     // Ensure assets is always an array to prevent filter errors
@@ -1202,12 +1269,12 @@ export default function AssetList() {
         setShowAssetDetail(true)
     }
 
-    const getHealthColor = (score?: number) => {
-        if (!score) return 'text-gray-500 bg-gray-100 border-gray-200'
-        if (score >= 90) return 'text-emerald-600 bg-emerald-100 border-emerald-200'
-        if (score >= 75) return 'text-slate-600 bg-slate-100 border-slate-200'
-        if (score >= 50) return 'text-amber-600 bg-amber-100 border-amber-200'
-        return 'text-rose-600 bg-rose-100 border-rose-200'
+    const getHealthColor = (_score?: number) => {
+        return 'text-black bg-white border-gray-300 hover:bg-gray-100'
+    }
+
+    const getStatusColor = (_status?: string) => {
+        return 'text-black bg-white border-gray-300 hover:bg-gray-100'
     }
 
     const getRiskLevel = (healthScore?: number): string => {
@@ -1360,7 +1427,10 @@ export default function AssetList() {
                         <Upload className="h-4 w-4 mr-2" />
                         Bulk Import
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                        variant="outline"
+                        onClick={generateReport}
+                    >
                         <FileText className="h-4 w-4 mr-2" />
                         Generate Reports
                     </Button>
@@ -1590,12 +1660,12 @@ export default function AssetList() {
                                             <td className="py-3 px-2 text-sm align-middle truncate" title={asset.type}>{asset.type}</td>
                                             <td className="py-3 px-2 text-sm align-middle truncate" title={asset.region || 'N/A'}>{asset.region || 'N/A'}</td>
                                             <td className="py-3 px-2 align-middle">
-                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs inline-flex w-fit`}>
+                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs inline-flex w-fit transition-colors`}>
                                                     {getHealthStatus(asset.health_score)}
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-2 align-middle">
-                                                <Badge variant={asset.status === 'active' ? 'default' : 'outline'} className="text-xs inline-flex w-fit">
+                                                <Badge className={`${getStatusColor(asset.status)} text-xs inline-flex w-fit transition-colors`}>
                                                     {asset.status ? asset.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
                                                 </Badge>
                                             </td>

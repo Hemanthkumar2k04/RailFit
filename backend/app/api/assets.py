@@ -135,7 +135,7 @@ async def create_asset(
         # Generate asset data
         asset_id = str(uuid.uuid4())
         # qr_code = f"QR-{asset_id[:8]}"  # Removed - column deleted from database
-        current_time = datetime.utcnow().isoformat() + "Z"
+        current_time = datetime.now().isoformat() + "Z"
         
         # Prepare metadata with default inspection and maintenance dates
         metadata = asset.metadata or {}
@@ -904,3 +904,85 @@ async def assets_summary_debug():
             detail=f"Failed to compute summary: {str(e)}"
         )
 
+
+@router.get("/generate-report")
+async def generate_comprehensive_report(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Generate comprehensive PDF report with:
+    - Summary Report (total assets, categorized by type, location, status)
+    - Health & Maintenance Report (inspection status, defects, alerts)
+    - Traceability Report (vendor mapping, installation sites, lifecycle)
+    - Utilization & Performance Report (usage breakdown, efficiency metrics)
+    """
+    try:
+        # Verify token
+        payload = verify_token(credentials.credentials)
+        
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            # Fetch all assets
+            assets_response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/assets",
+                headers=headers,
+                params={"select": "*"}
+            )
+            assets = assets_response.json() if assets_response.status_code == 200 else []
+            
+            # Fetch vendors
+            vendors_response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/vendors",
+                headers=headers,
+                params={"select": "*"}
+            )
+            vendors = vendors_response.json() if vendors_response.status_code == 200 else []
+            
+            # Fetch inspections
+            inspections_response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/inspections",
+                headers=headers,
+                params={"select": "*"}
+            )
+            inspections = inspections_response.json() if inspections_response.status_code == 200 else []
+            
+            # Fetch alerts
+            alerts_response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/alerts",
+                headers=headers,
+                params={"select": "*"}
+            )
+            alerts = alerts_response.json() if alerts_response.status_code == 200 else []
+            
+            # Import report service
+            from app.services.report_service import ReportService
+            
+            # Generate PDF report
+            pdf_buffer = ReportService.generate_comprehensive_report(
+                assets=assets,
+                vendors=vendors,
+                inspections=inspections,
+                alerts=alerts,
+                report_type="comprehensive"
+            )
+            
+            # Return PDF as response
+            filename = f"RailFit_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            return Response(
+                content=pdf_buffer.getvalue(),
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}"
+                }
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate report: {str(e)}"
+        )

@@ -35,6 +35,15 @@ export const API_ENDPOINTS = {
   // Alert endpoints
   ALERTS: {
     BASE: `${API_BASE_URL}/api/alerts`,
+  },
+  
+  // Analytics endpoints
+  ANALYTICS: {
+    OVERVIEW: `${API_BASE_URL}/api/analytics/overview`,
+    ASSET_HEALTH_RUL: `${API_BASE_URL}/api/analytics/asset-health-rul`,
+    RUL_ANALYTICS: `${API_BASE_URL}/api/analytics/rul-analytics`,
+    VENDOR_PERFORMANCE: `${API_BASE_URL}/api/analytics/vendor-performance`,
+    REGIONAL_STATISTICS: `${API_BASE_URL}/api/analytics/regional-statistics`,
   }
 }
 

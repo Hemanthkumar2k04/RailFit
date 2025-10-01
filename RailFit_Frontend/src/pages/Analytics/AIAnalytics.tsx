@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, ScatterChart, Scatter,
+  BarChart, Bar, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine, AreaChart, Area, PieChart, Pie, Cell, RadarChart, 
+  Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 
 // Supabase Configuration (kept inline for now)
@@ -134,8 +135,8 @@ const GaugeChart: React.FC<{ data: GaugeData }> = ({ data }) => {
   const rotation = (data.fleetHealth / 100) * 180 - 90;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">Fleet Health Score</h3>
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">Fleet Health Score</h3>
       <div className="flex flex-col items-center">
         <div className="relative w-64 h-32">
           <svg viewBox="0 0 200 100" className="w-full h-full">
@@ -190,8 +191,8 @@ const GaugeChart: React.FC<{ data: GaugeData }> = ({ data }) => {
 // RUL Analytics Card Component
 const RULAnalyticsCard: React.FC<{ data: RULAnalytics }> = ({ data }) => {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">RUL Analytics Overview</h3>
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">RUL Analytics Overview</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-red-600">{data.critical_assets || 0}</div>
@@ -212,13 +213,13 @@ const RULAnalyticsCard: React.FC<{ data: RULAnalytics }> = ({ data }) => {
       </div>
       
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm text-gray-700">
           <span>Avg Health Score:</span>
-          <span className="font-semibold">{(data.average_health_score || 0).toFixed(1)}</span>
+          <span className="font-semibold text-gray-900">{(data.average_health_score || 0).toFixed(1)}</span>
         </div>
-        <div className="flex justify-between text-sm mt-1">
+        <div className="flex justify-between text-sm text-gray-700 mt-1">
           <span>Prediction Confidence:</span>
-          <span className="font-semibold">{((data.average_confidence || 0) * 100).toFixed(1)}%</span>
+          <span className="font-semibold text-gray-900">{((data.average_confidence || 0) * 100).toFixed(1)}%</span>
         </div>
       </div>
     </div>
@@ -238,8 +239,8 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold mb-4">Geographic Asset Health Distribution</h3>
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900">Geographic Asset Health Distribution</h3>
         <div className="text-center text-gray-500 py-8">No geographic data available</div>
       </div>
     );
@@ -253,8 +254,8 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
   const maxLng = Math.max(...lngs);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">Geographic Asset Health Distribution</h3>
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">Geographic Asset Health Distribution</h3>
       <div className="text-sm text-gray-600 mb-4">
         Coordinates: Latitude (Y) vs Longitude (X) | Color = Health Score
       </div>
@@ -284,8 +285,8 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
       </div>
 
       {selectedAsset && (
-        <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
-          <div className="font-semibold">{selectedAsset.type}</div>
+        <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-300">
+          <div className="font-semibold text-gray-900">{selectedAsset.type}</div>
           <div className="text-sm text-gray-700">
             <div>Location: {selectedAsset.location}</div>
             <div>Health Score: {selectedAsset.healthScore}</div>
@@ -299,7 +300,7 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
         </div>
       )}
 
-      <div className="flex items-center gap-4 mt-4 text-xs">
+      <div className="flex items-center gap-4 mt-4 text-xs text-gray-700">
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 bg-red-500 rounded-full"></span> Critical (0-39)
         </span>
@@ -487,17 +488,17 @@ const AIAnalytics: React.FC = () => {
 
   const priorityColors: Record<string, string> = {
     'Immediate': '#DC2626',
-    'High': '#e53935', // changed to a more red color
+    'High': '#e53935',
     'Medium': '#EAB308',
     'Low': '#16A34A'
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading real-time data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
+          <p className="mt-4 text-gray-700 font-medium">Loading real-time data...</p>
         </div>
       </div>
     );
@@ -505,16 +506,16 @@ const AIAnalytics: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <h3 className="text-red-800 font-semibold mb-2">Connection Error</h3>
-          <p className="text-red-600 text-sm mb-2">{error}</p>
-          <p className="text-red-700 text-xs mb-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="bg-white border-2 border-gray-300 rounded-lg p-6 max-w-md shadow-lg">
+          <h3 className="text-gray-900 font-bold mb-2 text-lg">Connection Error</h3>
+          <p className="text-gray-700 text-sm mb-2">{error}</p>
+          <p className="text-gray-600 text-xs mb-4">
             Run the provided SQL schema to set up your database tables and views.
           </p>
           <button
             onClick={fetchData}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            className="mt-4 bg-gradient-to-r from-gray-800 to-black text-white px-6 py-2 rounded hover:from-black hover:to-gray-900 font-medium transition-all"
           >
             Retry Connection
           </button>
@@ -524,28 +525,28 @@ const AIAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">RailFit Analytics Dashboard</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-black bg-clip-text text-transparent">RailFit Analytics Dashboard</h1>
             <p className="text-gray-600 mt-1">Real-time asset health monitoring and predictive maintenance</p>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Live</span>
+            <div className="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-sm">
+              <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+              <span className="font-medium">Live</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-gray-500 mt-2">
               Last update: {lastUpdate.toLocaleTimeString()}
             </div>
           </div>
         </div>
 
         {assets.length === 0 ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-            <p className="text-yellow-800 font-semibold mb-2">No assets found in database</p>
-            <p className="text-yellow-700 text-sm">
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-6 text-center shadow-md">
+            <p className="text-gray-900 font-bold mb-2 text-lg">No assets found in database</p>
+            <p className="text-gray-600 text-sm">
               Run the provided SQL schema to create tables and insert sample data.
             </p>
           </div>
@@ -559,52 +560,175 @@ const AIAnalytics: React.FC = () => {
 
             {/* Line Chart and Bar Chart Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Line Chart */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Health Score Trends Over Time</h3>
+              {/* Area Chart - Health Score Trends */}
+              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Health Score Trends Over Time</h3>
                 <div className="text-sm text-gray-600 mb-4">
-                  X-axis: Time (weeks) | Y-axis: Health Score (0-100)
+                  Trend analysis showing health score progression by asset type
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={lineChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" angle={-45} textAnchor="end" height={80} />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Legend />
-                    <ReferenceLine y={40} stroke="#DC2626" strokeDasharray="3 3" label="Critical" />
-                    {assetTypes.map(type => (
-                      <Line
+                  <AreaChart data={lineChartData}>
+                    <defs>
+                      {assetTypes.map((type, idx) => (
+                        <linearGradient key={type} id={`color${idx}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.1}/>
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="week" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={80}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <ReferenceLine y={40} stroke="#DC2626" strokeDasharray="3 3" label="Critical Threshold" />
+                    {assetTypes.map((type, idx) => (
+                      <Area
                         key={type}
                         type="monotone"
-                        dataKey={type}
+                        dataKey={type ?? 'unknown'}
                         stroke={colors[type as string] ?? '#6366F1'}
                         strokeWidth={2}
-                        dot={false}
+                        fill={`url(#color${idx})`}
+                        fillOpacity={0.6}
                       />
                     ))}
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Bar Chart */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">RUL Distribution by Asset Type</h3>
+              {/* Stacked Bar Chart - RUL Distribution */}
+              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">RUL Distribution by Asset Type</h3>
                 <div className="text-sm text-gray-600 mb-4">
-                  X-axis: Number of Assets | Y-axis: Asset Types | Stacked by RUL Category
+                  Remaining Useful Life categorized by urgency level
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={barData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="assetType" width={120} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="critical" stackId="a" fill="#DC2626" name="Critical (≤30d)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis type="number" tick={{ fontSize: 12 }} />
+                    <YAxis 
+                      type="category" 
+                      dataKey="assetType" 
+                      width={120}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <Bar dataKey="critical" stackId="a" fill="#DC2626" name="Critical (≤30d)" radius={[0, 4, 4, 0]} />
                     <Bar dataKey="warning" stackId="a" fill="#F59E0B" name="Warning (31-90d)" />
                     <Bar dataKey="monitor" stackId="a" fill="#EAB308" name="Monitor (91-365d)" />
-                    <Bar dataKey="good" stackId="a" fill="#16A34A" name="Good (>365d)" />
+                    <Bar dataKey="good" stackId="a" fill="#16A34A" name="Good (>365d)" radius={[0, 4, 4, 0]} />
                   </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Pie Chart and Radar Chart Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Pie Chart - Asset Type Distribution */}
+              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Asset Type Distribution</h3>
+                <div className="text-sm text-gray-600 mb-4">
+                  Composition of monitored assets by type
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={barData.map(item => ({
+                        name: item.assetType,
+                        value: item.total
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={90}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {barData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={colors[entry.assetType] ?? '#6366F1'} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Radar Chart - Asset Health Performance */}
+              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Asset Performance Radar</h3>
+                <div className="text-sm text-gray-600 mb-4">
+                  Multi-dimensional health assessment by asset type
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={barData.map(item => ({
+                    assetType: item.assetType,
+                    health: ((item.good + item.monitor) / item.total) * 100,
+                    reliability: (item.good / item.total) * 100,
+                    critical: 100 - ((item.critical / item.total) * 100),
+                    availability: ((item.total - item.critical) / item.total) * 100
+                  }))}>
+                    <PolarGrid stroke="#e5e7eb" />
+                    <PolarAngleAxis dataKey="assetType" tick={{ fontSize: 11 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                    <Radar 
+                      name="Health Score" 
+                      dataKey="health" 
+                      stroke="#10B981" 
+                      fill="#10B981" 
+                      fillOpacity={0.5}
+                      strokeWidth={2}
+                    />
+                    <Radar 
+                      name="Reliability" 
+                      dataKey="reliability" 
+                      stroke="#3B82F6" 
+                      fill="#3B82F6" 
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                    />
+                  </RadarChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -616,30 +740,34 @@ const AIAnalytics: React.FC = () => {
               </div>
             )}
 
-            {/* Scatter Plot */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold mb-4">Health vs RUL Priority Matrix</h3>
+            {/* Scatter Plot - Enhanced */}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Health vs RUL Priority Matrix</h3>
               <div className="text-sm text-gray-600 mb-4">
-                X-axis: Health Score (0-100) | Y-axis: RUL Days | Color = Priority | Hover for details
+                Interactive scatter plot showing the relationship between asset health and remaining useful life
               </div>
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={450}>
                 <ScatterChart 
                   data={scatterData}
                   margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     type="number" 
                     dataKey="healthScore" 
                     domain={[0, 100]} 
                     name="Health Score"
                     tickCount={6}
+                    label={{ value: 'Health Score', position: 'insideBottom', offset: -10 }}
+                    tick={{ fontSize: 12 }}
                   />
                   <YAxis 
                     type="number" 
                     dataKey="rulDays" 
                     name="RUL (days)"
                     domain={[0, 'dataMax + 50']}
+                    label={{ value: 'Remaining Useful Life (days)', angle: -90, position: 'insideLeft' }}
+                    tick={{ fontSize: 12 }}
                   />
                   <Tooltip 
                     cursor={{ strokeDasharray: '3 3' }}
@@ -647,25 +775,34 @@ const AIAnalytics: React.FC = () => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
-                            <p className="font-semibold">{data.type}</p>
-                            <p className="text-sm">ID: {data.assetId}</p>
-                            <p className="text-sm">Location: {data.location}</p>
-                            <p className="text-sm">Health: {data.healthScore}</p>
-                            <p className="text-sm">RUL: {data.rulDays} days</p>
-                            <p className="text-sm">Priority: {data.priority}</p>
-                            <p className="text-sm">Alerts: {data.alertCount}</p>
-                            <p className="text-sm">Vendor: {data.vendor}</p>
-                            <p className="text-sm">Utilization: {data.utilizationPercentage}%</p>
+                          <div className="bg-white p-4 border-2 border-gray-300 rounded-lg shadow-xl">
+                            <p className="font-bold text-gray-900 text-base mb-2">{data.type}</p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-700"><span className="font-semibold">ID:</span> {data.assetId}</p>
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Location:</span> {data.location}</p>
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Health:</span> {data.healthScore.toFixed(1)}</p>
+                              <p className="text-sm text-gray-700"><span className="font-semibold">RUL:</span> {data.rulDays} days</p>
+                              <p className={`text-sm font-semibold ${
+                                data.priority === 'Immediate' ? 'text-red-600' :
+                                data.priority === 'High' ? 'text-orange-600' :
+                                data.priority === 'Medium' ? 'text-yellow-600' :
+                                'text-green-600'
+                              }`}>Priority: {data.priority}</p>
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Alerts:</span> {data.alertCount}</p>
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Vendor:</span> {data.vendor}</p>
+                              {data.utilizationPercentage && (
+                                <p className="text-sm text-gray-700"><span className="font-semibold">Utilization:</span> {data.utilizationPercentage}%</p>
+                              )}
+                            </div>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Legend />
-                  <ReferenceLine x={50} stroke="#666" strokeDasharray="3 3" />
-                  <ReferenceLine y={180} stroke="#666" strokeDasharray="3 3" />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  <ReferenceLine x={50} stroke="#9ca3af" strokeDasharray="3 3" label="Avg Health" />
+                  <ReferenceLine y={180} stroke="#9ca3af" strokeDasharray="3 3" label="Critical RUL" />
                   
                   {Object.entries(priorityColors).map(([priority, color]) => {
                     const priorityData = scatterData.filter(d => d.priority === priority);
@@ -679,11 +816,21 @@ const AIAnalytics: React.FC = () => {
                         fill={color}
                         stroke={color}
                         strokeWidth={2}
-                          />
-  );
-})}
+                        fillOpacity={0.7}
+                        shape="circle"
+                      />
+                    );
+                  })}
                 </ScatterChart>
               </ResponsiveContainer>
+              
+              {/* Legend Description */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-600">
+                  <span className="font-semibold">Quadrant Analysis:</span> Assets in the top-left quadrant (low health, high RUL) may need preventive maintenance. 
+                  Bottom-right quadrant (high health, low RUL) indicates natural aging requiring scheduled replacement.
+                </p>
+              </div>
             </div>
           </>
         )}
