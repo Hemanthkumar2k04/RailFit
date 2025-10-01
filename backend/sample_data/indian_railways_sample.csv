@@ -1,5 +1,0 @@
-Fitting_ID,QR_Code,Fitting_Type,Vendor_Name,Vendor_Lot,Manufacture_Date,Supply_Date,Location,Warranty_Period,Inspection_Date,Inspection_Result,Performance_Status,UDM_ID,TMS_ID
-ERC005123,QRCXZ12,Rail Clip,A1 Steel,LOT2025A,2025-06-03,2025-07-09,Nagpur-201KM,36 M,2025-08-20,Pass,In Service,UDM-9812,TMS-7504
-PAD038449,QRYK209,Rail Pad,BharatPads,LOT618B,2025-05-02,2025-05-23,Nagpur-202KM,24 M,2025-09-10,Fail,Defective,UDM-9786,TMS-7505
-LIN775101,QRLNA87,Liner,RLY Liners,LOT119C,2022-01-01,2022-01-11,Wardha-211KM,24 M,2024-07-29,Pass,Expired,UDM-9901,TMS-7812
-SLP900201,QRSVV392,Sleeper,SleepWell,LOT2320C,2024-11-11,2024-11-24,Wardha-214KM,60 M,2025-07-21,Pass,In Service,UDM-9903,TMS-7815

@@ -13,6 +13,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { useAuth } from "@/context/AuthContext"
+import { useLocation } from "react-router-dom"
+import * as preloadUtils from "@/utils/preload"
 
 // Navigation links array to be used in both desktop and mobile menus
 const allNavigationLinks = [
@@ -29,9 +31,32 @@ interface NavbarProps {
 
 export default function Navbar({ onLogout }: NavbarProps) {
   const { canAccessPage } = useAuth()
+  const location = useLocation()
   
   // Filter navigation links based on user permissions
   const navigationLinks = allNavigationLinks.filter(link => canAccessPage(link.page))
+  
+  // Check if a link is the current page
+  const isActivePage = (href: string) => {
+    return location.pathname === href || location.pathname.startsWith(href + '/')
+  }
+  
+  // Preload route on hover for instant navigation
+  const handleLinkHover = (href: string) => {
+    const preloadMap: Record<string, () => Promise<any>> = {
+      '/dashboard': preloadUtils.preloadDashboard,
+      '/assets': preloadUtils.preloadAssets,
+      '/inspections': preloadUtils.preloadInspections,
+      '/analytics': preloadUtils.preloadAnalytics,
+      '/alerts': preloadUtils.preloadAlerts,
+    }
+    
+    const preloadFn = preloadMap[href]
+    if (preloadFn) {
+      preloadFn()
+    }
+  }
+  
   return (
     <header className="border-b px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
@@ -75,13 +100,24 @@ export default function Navbar({ onLogout }: NavbarProps) {
             <PopoverContent align="start" className="w-36 p-1 md:hidden">
               <NavigationMenu className="max-w-none *:w-full">
                 <NavigationMenuList className="flex-col items-start gap-0 md:gap-2">
-                  {navigationLinks.map((link, index) => (
-                    <NavigationMenuItem key={index} className="w-full">
-                      <NavigationMenuLink href={link.href} className="py-1.5">
-                        {link.label}
-                      </NavigationMenuLink>
-                    </NavigationMenuItem>
-                  ))}
+                  {navigationLinks.map((link, index) => {
+                    const isActive = isActivePage(link.href)
+                    return (
+                      <NavigationMenuItem key={index} className="w-full">
+                        <NavigationMenuLink 
+                          href={link.href}
+                          onMouseEnter={() => handleLinkHover(link.href)}
+                          className={`py-1.5 px-3 rounded-md transition-colors ${
+                            isActive 
+                              ? 'bg-primary text-primary-foreground font-semibold' 
+                              : 'hover:bg-accent'
+                          }`}
+                        >
+                          {link.label}
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
+                    )
+                  })}
                 </NavigationMenuList>
               </NavigationMenu>
             </PopoverContent>
@@ -94,16 +130,24 @@ export default function Navbar({ onLogout }: NavbarProps) {
             {/* Navigation menu */}
             <NavigationMenu className="max-md:hidden">
               <NavigationMenuList className="gap-2">
-                {navigationLinks.map((link, index) => (
-                  <NavigationMenuItem key={index}>
-                    <NavigationMenuLink
-                      href={link.href}
-                      className="text-muted-foreground hover:text-primary py-1.5 font-medium"
-                    >
-                      {link.label}
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
+                {navigationLinks.map((link, index) => {
+                  const isActive = isActivePage(link.href)
+                  return (
+                    <NavigationMenuItem key={index}>
+                      <NavigationMenuLink
+                        href={link.href}
+                        onMouseEnter={() => handleLinkHover(link.href)}
+                        className={`py-1.5 px-3 rounded-full font-medium transition-colors ${
+                          isActive 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'text-muted-foreground hover:text-primary hover:bg-accent'
+                        }`}
+                      >
+                        {link.label}
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  )
+                })}
               </NavigationMenuList>
             </NavigationMenu>
           </div>

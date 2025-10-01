@@ -19,13 +19,33 @@ export default defineConfig({
       external: [],
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom']
+          // Core React libraries
+          'react-vendor': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
+          
+          // UI component libraries
+          'ui-components': [
+            '@radix-ui/react-slot',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge'
+          ],
+          
+          // Large visualization library
+          'charts': ['recharts'],
+          
+          // Icons library
+          'icons': ['lucide-react'],
+          
+          // QR code functionality
+          'qr-utils': ['qr-scanner', 'qrcode']
         }
       }
     },
     target: 'esnext',
-    minify: 'esbuild'
+    minify: 'esbuild',
+    // Chunk size warnings at 1000kb
+    chunkSizeWarningLimit: 1000
   },
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-x64-musl'],

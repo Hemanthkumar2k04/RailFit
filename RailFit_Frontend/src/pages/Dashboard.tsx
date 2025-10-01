@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Plus, Package, RefreshCw, TrendingUp, Activity } from "lucide-react";
 import AddAssetModal from "@/components/AddAssetModal";
 import { API_ENDPOINTS } from "@/config/api";
+import { preloadCommonRoutes } from "@/utils/preload";
 
 // Utility functions
 const formatNumber = (num: number, decimals = 2): string => {
@@ -131,6 +132,9 @@ export default function Dashboard() {
   useEffect(() => {
     // Load initial data
     fetchDashboardData();
+    
+    // Preload commonly accessed routes after dashboard loads
+    preloadCommonRoutes();
     
     // Auto-refresh dashboard every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);

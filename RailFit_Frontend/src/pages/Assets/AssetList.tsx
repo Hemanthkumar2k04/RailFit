@@ -585,9 +585,20 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
 
     // Helper function to safely get metadata or fallback values
     const getMetadataField = (key: string, fallbackProperty?: keyof Asset): string => {
-        // First try to get from metadata object
+        // First try to get from metadata object directly
         const metadataValue = asset?.metadata?.[key]
-        if (metadataValue) return String(metadataValue)
+        if (metadataValue !== undefined && metadataValue !== null) {
+            return String(metadataValue)
+        }
+        
+        // Check if it's in technical_specs nested object
+        const technicalSpecs = asset?.metadata?.technical_specs
+        if (technicalSpecs && typeof technicalSpecs === 'object') {
+            const techValue = (technicalSpecs as any)[key]
+            if (techValue !== undefined && techValue !== null) {
+                return String(techValue)
+            }
+        }
         
         // Then try fallback property on asset object (for backward compatibility)
         if (fallbackProperty && asset?.[fallbackProperty]) {
@@ -882,10 +893,41 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                         <p className="font-semibold">{getMetadataField('manufacturer', 'manufacturer')}</p>
                                     </div>
                                 </div>
+
+                                {/* Technical Specifications Grid */}
+                                <div className="mb-6">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Technical Specifications</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                                            <span className="text-xs font-medium text-blue-700">Material</span>
+                                            <p className="font-semibold text-blue-900">{getMetadataField('material')}</p>
+                                        </div>
+                                        
+                                        <div className="p-3 bg-purple-50 border border-purple-200 rounded">
+                                            <span className="text-xs font-medium text-purple-700">Weight</span>
+                                            <p className="font-semibold text-purple-900">{getMetadataField('weight_kg')} kg</p>
+                                        </div>
+                                        
+                                        <div className="p-3 bg-green-50 border border-green-200 rounded">
+                                            <span className="text-xs font-medium text-green-700">Dimensions</span>
+                                            <p className="font-semibold text-green-900">{getMetadataField('dimensions')}</p>
+                                        </div>
+                                        
+                                        <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+                                            <span className="text-xs font-medium text-orange-700">Tensile Strength</span>
+                                            <p className="font-semibold text-orange-900">{getMetadataField('tensile_strength')}</p>
+                                        </div>
+                                        
+                                        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded">
+                                            <span className="text-xs font-medium text-indigo-700">Temperature Range</span>
+                                            <p className="font-semibold text-indigo-900">{getMetadataField('temperature_range')}</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 {/* Description from Metadata */}
                                 {getMetadataField('description', 'description') !== 'N/A' && (
-                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-4">
                                         <span className="text-sm font-medium text-gray-700">Description</span>
                                         <p className="mt-2 text-gray-800">{getMetadataField('description', 'description')}</p>
                                     </div>
