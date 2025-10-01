@@ -134,7 +134,7 @@ async def create_asset(
     try:
         # Generate asset data
         asset_id = str(uuid.uuid4())
-        qr_code = f"QR-{asset_id[:8]}"
+        # qr_code = f"QR-{asset_id[:8]}"  # Removed - column deleted from database
         current_time = datetime.utcnow().isoformat() + "Z"
         
         # Prepare metadata with default inspection and maintenance dates
@@ -156,7 +156,7 @@ async def create_asset(
             "health_score": asset.health_score or 85,
             "predicted_rul": asset.predicted_rul,
             "status": asset.status,
-            "qr_code": qr_code,
+            # "qr_code": qr_code,  # Removed - column deleted from database
             "metadata": metadata,
             "created_at": current_time,
             "updated_at": current_time
@@ -616,19 +616,19 @@ async def bulk_import_assets(
                         elif duplicate_strategy == "update":
                             # Update existing asset - will implement update logic
                             asset_id = existing_asset["asset_id"]
-                            qr_code = existing_asset.get("qr_code", f"QR-{asset_id[:8]}")
+                            # qr_code = existing_asset.get("qr_code", f"QR-{asset_id[:8]}")  # Removed
                             current_time = datetime.utcnow().isoformat() + "Z"
                             update_mode = True
                         else:  # create_anyway
                             # Create new asset regardless of duplicates
                             asset_id = str(uuid.uuid4())
-                            qr_code = f"QR-{asset_id[:8]}"
+                            # qr_code = f"QR-{asset_id[:8]}"  # Removed
                             current_time = datetime.utcnow().isoformat() + "Z"
                             update_mode = False
                     else:
                         # No existing asset found, create new
                         asset_id = str(uuid.uuid4())
-                        qr_code = f"QR-{asset_id[:8]}"
+                        # qr_code = f"QR-{asset_id[:8]}"  # Removed
                         current_time = datetime.utcnow().isoformat() + "Z"
                         update_mode = False
                     
@@ -724,7 +724,7 @@ async def bulk_import_assets(
                         "predicted_rul": None,
                         "status": normalized_status,
                         "condition": normalized_condition,
-                        "qr_code": qr_code,
+                        # "qr_code": qr_code,  # Removed - column deleted from database
                         "metadata": metadata,
                         "created_at": current_time,
                         "updated_at": current_time

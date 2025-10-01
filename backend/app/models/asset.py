@@ -16,7 +16,7 @@ class Asset(Base):
     health_score = Column(Integer, default=100)
     predicted_rul = Column(Integer)  # Remaining Useful Life in months
     status = Column(String(50), default="active")
-    qr_code = Column(Text)  # Base64 encoded QR code
+    # qr_code = Column(Text)  # Removed - column deleted from database
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

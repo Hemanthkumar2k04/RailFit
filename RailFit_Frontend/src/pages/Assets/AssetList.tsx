@@ -18,7 +18,7 @@ import {
     List,
     Eye,
     Edit,
-    QrCode,
+    // QrCode, // Removed - not needed after qr_code column deletion
     Calendar,
     MapPin,
     TrendingUp,
@@ -84,7 +84,7 @@ const regionOptions = [
         { value: '', label: 'All Conditions' },
         { value: 'excellent', label: 'Excellent' },
         { value: 'good', label: 'Good' },
-        { value: 'ok', label: 'OK' },
+        { value: 'fair', label: 'Fair' },
         { value: 'critical', label: 'Critical' }
     ]// Types for API response
 
@@ -125,7 +125,7 @@ interface Asset {
     vendor_id?: string
     created_at: string
     updated_at: string
-    qr_code?: string
+    // qr_code?: string // Removed - column deleted from database
     // Metadata JSON field from database
     metadata?: AssetMetadata
     // Legacy direct fields (for backward compatibility)
@@ -748,10 +748,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                     <span className="text-sm font-medium text-gray-500">Type</span>
                                     <p className="font-semibold">{asset.type}</p>
                                 </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">QR Code</span>
-                                    <p className="font-mono text-sm">{asset.qr_code || 'Not generated'}</p>
-                                </div>
+                                {/* QR Code display removed - column deleted from database */}
                             </CardContent>
                         </Card>
                     </div>
@@ -898,29 +895,29 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                 <div className="mb-6">
                                     <h4 className="text-sm font-semibold text-gray-700 mb-3">Technical Specifications</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                                            <span className="text-xs font-medium text-blue-700">Material</span>
-                                            <p className="font-semibold text-blue-900">{getMetadataField('material')}</p>
+                                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                                            <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Material</span>
+                                            <p className="mt-1 font-semibold text-gray-900">{getMetadataField('material')}</p>
                                         </div>
                                         
-                                        <div className="p-3 bg-purple-50 border border-purple-200 rounded">
-                                            <span className="text-xs font-medium text-purple-700">Weight</span>
-                                            <p className="font-semibold text-purple-900">{getMetadataField('weight_kg')} kg</p>
+                                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                                            <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Weight</span>
+                                            <p className="mt-1 font-semibold text-gray-900">{getMetadataField('weight_kg')} kg</p>
                                         </div>
                                         
-                                        <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                            <span className="text-xs font-medium text-green-700">Dimensions</span>
-                                            <p className="font-semibold text-green-900">{getMetadataField('dimensions')}</p>
+                                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                                            <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Dimensions</span>
+                                            <p className="mt-1 font-semibold text-gray-900">{getMetadataField('dimensions')}</p>
                                         </div>
                                         
-                                        <div className="p-3 bg-orange-50 border border-orange-200 rounded">
-                                            <span className="text-xs font-medium text-orange-700">Tensile Strength</span>
-                                            <p className="font-semibold text-orange-900">{getMetadataField('tensile_strength')}</p>
+                                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                                            <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Tensile Strength</span>
+                                            <p className="mt-1 font-semibold text-gray-900">{getMetadataField('tensile_strength')}</p>
                                         </div>
                                         
-                                        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded">
-                                            <span className="text-xs font-medium text-indigo-700">Temperature Range</span>
-                                            <p className="font-semibold text-indigo-900">{getMetadataField('temperature_range')}</p>
+                                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                                            <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Temperature Range</span>
+                                            <p className="mt-1 font-semibold text-gray-900">{getMetadataField('temperature_range')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -970,10 +967,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Asset
                             </Button>
-                            <Button variant="outline">
-                                <QrCode className="h-4 w-4 mr-2" />
-                                Generate QR Code
-                            </Button>
+                            {/* Generate QR Code button removed - qr_code column deleted from database */}
                         </div>
                         <Button onClick={onClose}>
                             Close
@@ -1131,6 +1125,15 @@ export default function AssetList() {
     // Ensure assets is always an array to prevent filter errors
     const safeAssets = assets || []
 
+    // Helper function to get health status - must be defined before filteredAssets
+    const getHealthStatus = (healthScore?: number): string => {
+        if (!healthScore) return 'Unknown'
+        if (healthScore >= 90) return 'Excellent'
+        if (healthScore >= 75) return 'Good'
+        if (healthScore >= 50) return 'Fair'
+        return 'Critical'
+    }
+
     const handleSearch = () => {
         setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page when searching
         fetchAssets(1, searchTerm, filters)
@@ -1141,13 +1144,26 @@ export default function AssetList() {
     }
 
     const filteredAssets = safeAssets.filter(asset => {
-        if (!searchTerm) return true
-        const search = searchTerm.toLowerCase()
-        return (
-            asset.asset_id.toLowerCase().includes(search) ||
-            asset.type.toLowerCase().includes(search) ||
-            asset.location.toLowerCase().includes(search)
-        )
+        // Search term filter
+        if (searchTerm) {
+            const search = searchTerm.toLowerCase()
+            const matchesSearch = (
+                asset.asset_id.toLowerCase().includes(search) ||
+                asset.type.toLowerCase().includes(search) ||
+                asset.location.toLowerCase().includes(search)
+            )
+            if (!matchesSearch) return false
+        }
+        
+        // Condition filter based on calculated health status
+        if (filters.condition) {
+            const calculatedCondition = getHealthStatus(asset.health_score).toLowerCase()
+            if (calculatedCondition !== filters.condition.toLowerCase()) {
+                return false
+            }
+        }
+        
+        return true
     })
 
     const toggleSelectAsset = (assetId: string) => {
@@ -1184,14 +1200,6 @@ export default function AssetList() {
     const handleViewAsset = (asset: Asset) => {
         setSelectedAsset(asset)
         setShowAssetDetail(true)
-    }
-
-    const getHealthStatus = (healthScore?: number): string => {
-        if (!healthScore) return 'Unknown'
-        if (healthScore >= 90) return 'Excellent'
-        if (healthScore >= 75) return 'Good'
-        if (healthScore >= 50) return 'Fair'
-        return 'Critical'
     }
 
     const getHealthColor = (score?: number) => {
@@ -1537,10 +1545,20 @@ export default function AssetList() {
                         </div>
                     ) : viewMode === 'table' ? (
                         <div className="overflow-x-auto">
-                            <table className="w-full table-auto">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="text-left py-3 px-4 font-medium">
+                            <table className="w-full table-auto min-w-full">
+                                <colgroup>
+                                    <col style={{ width: '3%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '15%' }} />
+                                    <col style={{ width: '18%' }} />
+                                    <col style={{ width: '11%' }} />
+                                    <col style={{ width: '13%' }} />
+                                    <col style={{ width: '12%' }} />
+                                    <col style={{ width: '18%' }} />
+                                </colgroup>
+                                <thead className="bg-gray-100">
+                                    <tr className="border-b-2 border-gray-300">
+                                        <th className="text-left py-4 px-2 font-bold text-base">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
@@ -1548,21 +1566,19 @@ export default function AssetList() {
                                                 className="rounded"
                                             />
                                         </th>
-                                        <th className="text-left py-3 px-4 font-medium">Asset ID</th>
-                                        <th className="text-left py-3 px-4 font-medium">Type</th>
-                                        <th className="text-left py-3 px-4 font-medium">Location</th>
-                                        <th className="text-left py-3 px-4 font-medium">Region</th>
-                                        <th className="text-left py-3 px-4 font-medium">Health Score</th>
-                                        <th className="text-left py-3 px-4 font-medium">Condition</th>
-                                        <th className="text-left py-3 px-4 font-medium">Status</th>
-                                        <th className="text-left py-3 px-4 font-medium">Install Date</th>
-                                        <th className="text-left py-3 px-4 font-medium">Actions</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Asset ID</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Type</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Region</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Condition</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Status</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Install Date</th>
+                                        <th className="text-left py-4 px-2 font-bold text-sm">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredAssets.map((asset) => (
                                         <tr key={asset.asset_id} className="border-b hover:bg-muted/50">
-                                            <td className="py-3 px-4">
+                                            <td className="py-3 px-2 align-middle">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedAssets.includes(asset.asset_id)}
@@ -1570,34 +1586,29 @@ export default function AssetList() {
                                                     className="rounded"
                                                 />
                                             </td>
-                                            <td className="py-3 px-4 font-mono text-sm">{asset.asset_id.slice(0, 8)}</td>
-                                            <td className="py-3 px-4">{asset.type}</td>
-                                            <td className="py-3 px-4">{asset.location}</td>
-                                            <td className="py-3 px-4">{asset.region || 'N/A'}</td>
-                                            <td className="py-3 px-4">
-                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
-                                                    {asset.health_score || 'N/A'}
+                                            <td className="py-3 px-2 font-mono text-xs align-middle truncate" title={asset.asset_id}>{asset.asset_id.slice(0, 8)}</td>
+                                            <td className="py-3 px-2 text-sm align-middle truncate" title={asset.type}>{asset.type}</td>
+                                            <td className="py-3 px-2 text-sm align-middle truncate" title={asset.region || 'N/A'}>{asset.region || 'N/A'}</td>
+                                            <td className="py-3 px-2 align-middle">
+                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs inline-flex w-fit`}>
+                                                    {getHealthStatus(asset.health_score)}
                                                 </Badge>
                                             </td>
-                                            <td className="py-3 px-4">
-                                                <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
-                                                    {asset.condition ? asset.condition.charAt(0).toUpperCase() + asset.condition.slice(1) : 'N/A'}
-                                                </Badge>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <Badge variant={asset.status === 'active' ? 'default' : 'outline'} className="text-xs">
+                                            <td className="py-3 px-2 align-middle">
+                                                <Badge variant={asset.status === 'active' ? 'default' : 'outline'} className="text-xs inline-flex w-fit">
                                                     {asset.status ? asset.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
                                                 </Badge>
                                             </td>
-                                            <td className="py-3 px-4 text-sm">{formatDate(asset.install_date)}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-2">
+                                            <td className="py-3 px-2 text-xs align-middle whitespace-nowrap">{formatDate(asset.install_date)}</td>
+                                            <td className="py-3 px-2 align-middle">
+                                                <div className="flex items-center gap-1">
                                                     <Button 
                                                         size="sm" 
                                                         variant="outline"
                                                         onClick={() => handleViewAsset(asset)}
+                                                        className="text-xs px-2 py-1"
                                                     >
-                                                        <Eye className="h-4 w-4 mr-1" />
+                                                        <Eye className="h-3 w-3 mr-1" />
                                                         View
                                                     </Button>
                                                     <QRCodeDisplay 
