@@ -51,6 +51,27 @@ const assetTypeOptions = [
     { value: 'Sleeper', label: 'Sleeper' }
 ]
 
+const regionOptions = [
+    { value: '', label: 'All Regions' },
+    { value: 'Northern Railway', label: 'Northern Railway' },
+    { value: 'Southern Railway', label: 'Southern Railway' },
+    { value: 'Eastern Railway', label: 'Eastern Railway' },
+    { value: 'Western Railway', label: 'Western Railway' },
+    { value: 'Central Railway', label: 'Central Railway' },
+    { value: 'North Eastern Railway', label: 'North Eastern Railway' },
+    { value: 'North Central Railway', label: 'North Central Railway' },
+    { value: 'South Central Railway', label: 'South Central Railway' },
+    { value: 'South Eastern Railway', label: 'South Eastern Railway' },
+    { value: 'North Western Railway', label: 'North Western Railway' },
+    { value: 'South East Central Railway', label: 'South East Central Railway' },
+    { value: 'East Central Railway', label: 'East Central Railway' },
+    { value: 'East Coast Railway', label: 'East Coast Railway' },
+    { value: 'South Western Railway', label: 'South Western Railway' },
+    { value: 'West Central Railway', label: 'West Central Railway' },
+    { value: 'North East Frontier Railway', label: 'North East Frontier Railway' },
+    { value: 'Metro Railway Kolkata', label: 'Metro Railway Kolkata' }
+]
+
     const statusOptions = [
         { value: '', label: 'All Status' },
         { value: 'active', label: 'Active' },
@@ -96,6 +117,7 @@ interface Asset {
     asset_id: string
     type: string
     location: string
+    region?: string
     health_score?: number
     status: string
     condition: string
@@ -133,6 +155,7 @@ interface AssetListResponse {
 interface AddAssetFormData {
     type: string
     location: string
+    region: string
     description: string
     serial_number: string
     model: string
@@ -155,6 +178,7 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
     const [formData, setFormData] = useState<AddAssetFormData>({
         type: '',
         location: '',
+        region: '',
         description: '',
         serial_number: '',
         model: '',
@@ -204,6 +228,7 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
             const payload = {
                 type: formData.type,
                 location: formData.location,
+                region: formData.region || null,
                 description: formData.description || null,
                 serial_number: formData.serial_number,
                 model: formData.model || null,
@@ -242,6 +267,7 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
             setFormData({
                 type: '',
                 location: '',
+                region: '',
                 description: '',
                 serial_number: '',
                 model: '',
@@ -306,6 +332,20 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
                                 placeholder="e.g., Platform 1, Section A"
                                 required
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Region</label>
+                            <select
+                                value={formData.region}
+                                onChange={(e) => handleInputChange('region', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="">Select Region</option>
+                                {regionOptions.filter(opt => opt.value !== '').map(region => (
+                                    <option key={region.value} value={region.value}>{region.label}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -624,6 +664,10 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                     </div>
                                 </div>
                                 <div>
+                                    <span className="text-sm font-medium text-gray-500">Region</span>
+                                    <p className="font-semibold">{asset.region || 'Not assigned'}</p>
+                                </div>
+                                <div>
                                     <span className="text-sm font-medium text-gray-500">Status</span>
                                     <div className="mt-1">
                                         <Badge variant={asset.status === 'active' ? 'default' : 'outline'}>
@@ -919,6 +963,7 @@ export default function AssetList() {
     const [filters, setFilters] = useState({
         type: '',
         location: '',
+        region: '',
         status: '',
         condition: ''
     })
@@ -998,6 +1043,7 @@ export default function AssetList() {
             if (searchQuery) params.append('search', searchQuery)
             if (assetFilters.type) params.append('asset_type', assetFilters.type)
             if (assetFilters.location) params.append('location', assetFilters.location)
+            if (assetFilters.region) params.append('region', assetFilters.region)
             if (assetFilters.status) params.append('status', assetFilters.status)
             if (assetFilters.condition) params.append('condition', assetFilters.condition)
             
@@ -1385,6 +1431,18 @@ export default function AssetList() {
                                 </select>
                                 
                                 <select
+                                    value={filters.region || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, region: e.target.value }))}
+                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    {regionOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                <select
                                     value={filters.status || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                                     className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -1451,6 +1509,7 @@ export default function AssetList() {
                                         <th className="text-left py-3 px-4 font-medium">Asset ID</th>
                                         <th className="text-left py-3 px-4 font-medium">Type</th>
                                         <th className="text-left py-3 px-4 font-medium">Location</th>
+                                        <th className="text-left py-3 px-4 font-medium">Region</th>
                                         <th className="text-left py-3 px-4 font-medium">Health Score</th>
                                         <th className="text-left py-3 px-4 font-medium">Condition</th>
                                         <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -1472,6 +1531,7 @@ export default function AssetList() {
                                             <td className="py-3 px-4 font-mono text-sm">{asset.asset_id.slice(0, 8)}</td>
                                             <td className="py-3 px-4">{asset.type}</td>
                                             <td className="py-3 px-4">{asset.location}</td>
+                                            <td className="py-3 px-4">{asset.region || 'N/A'}</td>
                                             <td className="py-3 px-4">
                                                 <Badge className={`${getHealthColor(asset.health_score)} text-xs`}>
                                                     {asset.health_score || 'N/A'}

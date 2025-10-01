@@ -74,6 +74,7 @@ class AssetCreate(BaseModel):
     vendor_id: Optional[str] = None
     install_date: Optional[str] = None
     location: str
+    region: Optional[str] = None
     gps_lat: Optional[float] = None
     gps_lng: Optional[float] = None
     warranty_period: Optional[int] = None
@@ -89,6 +90,7 @@ class Asset(BaseModel):
     vendor_id: Optional[str]
     install_date: Optional[str]
     location: str
+    region: Optional[str]
     gps_lat: Optional[float]
     gps_lng: Optional[float]
     warranty_period: Optional[int]
@@ -203,6 +205,7 @@ async def get_assets(
     limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
     asset_type: Optional[str] = Query(None, description="Filter by asset type"),
     location: Optional[str] = Query(None, description="Filter by location"),
+    region: Optional[str] = Query(None, description="Filter by region"),
     status: Optional[str] = Query(None, description="Filter by status"),
     condition: Optional[str] = Query(None, description="Filter by condition"),
     current_user: Dict[str, Any] = Depends(get_current_user_from_token)
@@ -225,6 +228,8 @@ async def get_assets(
                 params["type"] = f"eq.{asset_type}"
             if location:
                 params["location"] = f"ilike.%{location}%"
+            if region:
+                params["region"] = f"eq.{region}"
             if status:
                 params["status"] = f"eq.{status}"
             if condition:
@@ -240,6 +245,8 @@ async def get_assets(
                 count_params["type"] = f"eq.{asset_type}"
             if location:
                 count_params["location"] = f"ilike.%{location}%"
+            if region:
+                count_params["region"] = f"eq.{region}"
             if status:
                 count_params["status"] = f"eq.{status}"
             
