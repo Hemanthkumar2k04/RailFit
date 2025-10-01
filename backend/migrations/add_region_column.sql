@@ -2,6 +2,10 @@
 -- Description: Add railway region information to assets for better geographical categorization
 -- Created: October 2025
 
+-- Add last_updated column if it doesn't exist (required by trigger)
+ALTER TABLE assets 
+ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
 -- Add region column to assets table
 ALTER TABLE assets 
 ADD COLUMN IF NOT EXISTS region VARCHAR(100);

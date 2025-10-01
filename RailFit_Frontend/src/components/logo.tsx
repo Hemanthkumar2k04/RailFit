@@ -14,8 +14,8 @@ export default function Logo() {
         <path d="M18 16H6l-2 2v2h2l2-2h8l2 2h2v-2l-2-2zm-6 2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
       </svg>
       {/* RailFIT text */}
-      <span className="text-xl font-bold text-primary">
-        Rail<span className="text-blue-600">FIT</span>
+      <span className="text-xl font-bold text-black dark:text-white">
+        Rail<span className="text-black dark:text-white">FIT</span>
       </span>
     </div>
   )
