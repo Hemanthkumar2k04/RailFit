@@ -30,7 +30,7 @@ export default function Alerts() {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt_token');
       
       let url = `${API_BASE_URL}/api/alerts/`;
       const params = new URLSearchParams();
@@ -67,7 +67,7 @@ export default function Alerts() {
 
   const handleDismiss = async (alertId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt_token');
       const response = await fetch(`${API_BASE_URL}/api/alerts/${alertId}/dismiss`, {
         method: 'PATCH',
         headers: {
