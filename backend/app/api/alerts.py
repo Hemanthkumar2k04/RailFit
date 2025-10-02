@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 import httpx
 from typing import Optional
 from datetime import datetime
+from app.core.security import verify_token as verify_jwt_token
 
 router = APIRouter()
 security = HTTPBearer()
@@ -12,14 +13,25 @@ from app.core.config import settings
 SUPABASE_URL = settings.supabase_url
 SUPABASE_KEY = settings.supabase_anon_key
 
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return credentials.credentials
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return user info"""
+    token = credentials.credentials
+    payload = verify_jwt_token(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return payload
 
 @router.get("/")
 async def get_alerts(
     status: Optional[str] = None,
     priority: Optional[str] = None,
-    token: str = Depends(verify_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Fetch alerts from database with optional filtering
@@ -120,7 +132,7 @@ async def get_alerts(
 
 
 @router.patch("/{alert_id}/dismiss")
-async def dismiss_alert(alert_id: str, token: str = Depends(verify_token)):
+async def dismiss_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
     """Mark an alert as resolved"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
