@@ -227,3 +227,60 @@ logs
 *.key
 secrets/
 config.json
+
+# Backend specific
+alembic.ini
+*.csv
+login.json
+test_login.json
+schema_old.sql
+add_rul_system.sql
+
+# Mobile app builds
+RailFIT_Mobile/build/
+RailFIT_Mobile/android/app/build/
+RailFIT_Mobile/android/build/
+RailFIT_Mobile/ios/build/
+RailFIT_Mobile/android/.gradle/
+RailFIT_Mobile/android/app/release/
+RailFIT_Mobile/android/app/debug/
+*.apk
+*.aab
+*.ipa
+
+# Frontend build
+RailFit_Frontend/dist/
+RailFit_Frontend/.env
+
+# Documentation and notes
+*.pdf
+README_COMPLETE.md
+BACKEND_ORGANIZATION_COMPLETE.md
+CLEANUP_COMPLETION_REPORT.md
+COMPONENT_ANALYSIS_REPORT.md
+JSON_COMPONENTS_RECOVERY_REPORT.md
+MOBILE_DIRECTORY_CLEANUP_ANALYSIS.md
+PYTHON_COMPONENTS_ANALYSIS.md
+RECOVERY_SUMMARY.md
+RELEASE_BUILD.md
+App_Backup.tsx
+
+# Test and sample files
+test.txt
+test_*.json
+test_*.py
+*_sample*.csv
+sample_data/
+example.jpg
+
+# Railway deployment
+railway.json
+
+# Package locks (optional - uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+
+# VS Code workspace settings (keep extensions.json)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
