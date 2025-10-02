@@ -32,7 +32,7 @@ export default function Alerts() {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      let url = `${API_BASE_URL}/api/alerts`;
+      let url = `${API_BASE_URL}/api/alerts/`;
       const params = new URLSearchParams();
       
       if (filter !== 'all') {
