@@ -52,22 +52,18 @@ async def get_alerts(
                 "select": "alert_id,asset_id,type,message,priority,created_at,acknowledged_at,resolved_at,metadata"
             }
             
-            # Add filters based on query parameters
-            filters = []
+            # Add filters based on query parameters (each as separate param)
             if priority:
-                filters.append(f"priority=eq.{priority}")
+                params["priority"] = f"eq.{priority}"
             
             if status == "resolved":
-                filters.append("resolved_at=not.is.null")
+                params["resolved_at"] = "not.is.null"
             elif status == "acknowledged":
-                filters.append("acknowledged_at=not.is.null")
-                filters.append("resolved_at=is.null")
+                params["acknowledged_at"] = "not.is.null"
+                params["resolved_at"] = "is.null"
             elif status == "new":
-                filters.append("acknowledged_at=is.null")
-                filters.append("resolved_at=is.null")
-            
-            if filters:
-                params["and"] = f"({','.join(filters)})"
+                params["acknowledged_at"] = "is.null"
+                params["resolved_at"] = "is.null"
             
             response = await client.get(
                 f"{SUPABASE_URL}/rest/v1/alerts",
