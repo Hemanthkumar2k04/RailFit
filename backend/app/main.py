@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import auth, assets, dashboard, inspections, vendors, mobile
+from app.api import auth, assets, dashboard, inspections, vendors, mobile, analytics
 from app.api import alerts 
 # Create FastAPI app
 app = FastAPI(
@@ -27,6 +27,7 @@ app.include_router(vendors.router, prefix="/api/vendors")  # Results in /api/ven
 app.include_router(mobile.router, prefix="/api/mobile")  # Results in /api/mobile/*
 app.include_router(dashboard.router)  # Results in /api/dashboard (defined in router)
 app.include_router(alerts.router, prefix="/api/alerts")
+app.include_router(analytics.router, prefix="/api/analytics")  # Results in /api/analytics/*
 @app.get("/")
 async def root():
     """Root endpoint"""

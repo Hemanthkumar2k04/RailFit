@@ -12,7 +12,7 @@ const Register = lazy(() => import('./pages/Register'))
 const Assets = lazy(() => import('./pages/Assets/AssetList'))
 const AssetDetail = lazy(() => import('./pages/Assets/AssetDetail'))
 const Inspections = lazy(() => import('./pages/Inspections/InspectionList'))
-const Analytics = lazy(() => import('./pages/Analytics/AIAnalytics'))
+const Analytics = lazy(() => import('./pages/Analytics'))
 const Alerts = lazy(() => import('./pages/Alerts/AlertList'))
 
 // Loading fallback component

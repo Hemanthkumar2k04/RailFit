@@ -1,262 +1,144 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import List, Dict, Any
-from app.core.security import verify_token
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
 import httpx
+from typing import Dict, Any, List
+import asyncio
+from datetime import datetime, timedelta
 
 router = APIRouter(tags=["Analytics"])
 security = HTTPBearer()
 
-# Get Supabase configuration from settings
 from app.core.config import settings
 SUPABASE_URL = settings.supabase_url
 SUPABASE_KEY = settings.supabase_anon_key
 
-
-@router.get("/asset-health-rul")
-async def get_asset_health_rul_summary(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Get asset health and RUL summary from the asset_health_rul_summary view.
-    Returns comprehensive data for AI analytics dashboard.
-    """
-    try:
-        # Verify token
-        payload = verify_token(credentials.credentials)
-        
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            # Fetch asset health RUL summary
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/asset_health_rul_summary",
-                headers=headers,
-                params={"select": "*"}
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Failed to fetch asset health RUL summary: {response.text}"
-                )
-            
-            return response.json()
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch asset health RUL summary: {str(e)}"
-        )
-
-
-@router.get("/rul-analytics")
-async def get_rul_analytics(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Get RUL analytics from the rul_analytics view.
-    Returns aggregated RUL statistics and predictions.
-    """
-    try:
-        # Verify token
-        payload = verify_token(credentials.credentials)
-        
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            # Fetch RUL analytics
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/rul_analytics",
-                headers=headers,
-                params={"select": "*", "limit": "1"}
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Failed to fetch RUL analytics: {response.text}"
-                )
-            
-            data = response.json()
-            return data[0] if data else {}
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch RUL analytics: {str(e)}"
-        )
-
-
-@router.get("/vendor-performance")
-async def get_vendor_rul_performance(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Get vendor RUL performance from the vendor_rul_performance view.
-    Returns vendor-wise asset health and RUL statistics.
-    """
-    try:
-        # Verify token
-        payload = verify_token(credentials.credentials)
-        
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            # Fetch vendor RUL performance
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/vendor_rul_performance",
-                headers=headers,
-                params={"select": "*"}
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Failed to fetch vendor RUL performance: {response.text}"
-                )
-            
-            return response.json()
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch vendor RUL performance: {str(e)}"
-        )
-
-
-@router.get("/regional-statistics")
-async def get_regional_rul_statistics(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Get regional RUL statistics from the regional_rul_statistics view.
-    Returns region-wise asset health and RUL breakdowns.
-    """
-    try:
-        # Verify token
-        payload = verify_token(credentials.credentials)
-        
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            # Fetch regional RUL statistics
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/regional_rul_statistics",
-                headers=headers,
-                params={"select": "*"}
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Failed to fetch regional RUL statistics: {response.text}"
-                )
-            
-            return response.json()
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch regional RUL statistics: {str(e)}"
-        )
-
+async def verify_token(credentials: HTTPAuthCredentials = Depends(security)):
+    return credentials.credentials
 
 @router.get("/overview")
-async def get_analytics_overview(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Get comprehensive analytics overview combining multiple data sources.
-    Returns a complete analytics dashboard data set.
-    """
+async def get_analytics_overview(token: str = Depends(verify_token)):
     try:
-        # Verify token
-        payload = verify_token(credentials.credentials)
-        
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             headers = {
                 "apikey": SUPABASE_KEY,
                 "Authorization": f"Bearer {SUPABASE_KEY}",
                 "Content-Type": "application/json"
             }
             
-            # Fetch all analytics data in parallel
-            asset_health_task = client.get(
-                f"{SUPABASE_URL}/rest/v1/asset_health_rul_summary",
-                headers=headers,
-                params={"select": "*"}
+            assets_response, inspections_response, alerts_response, vendors_response = await asyncio.gather(
+                client.get(f"{SUPABASE_URL}/rest/v1/assets", params={"select": "*"}, headers=headers),
+                client.get(f"{SUPABASE_URL}/rest/v1/inspections", params={"select": "*"}, headers=headers),
+                client.get(f"{SUPABASE_URL}/rest/v1/alerts", params={"select": "*"}, headers=headers),
+                client.get(f"{SUPABASE_URL}/rest/v1/vendors", params={"select": "*"}, headers=headers)
             )
             
-            rul_analytics_task = client.get(
-                f"{SUPABASE_URL}/rest/v1/rul_analytics",
-                headers=headers,
-                params={"select": "*", "limit": "1"}
-            )
+            assets = assets_response.json() if assets_response.status_code == 200 else []
+            inspections = inspections_response.json() if inspections_response.status_code == 200 else []
+            alerts = alerts_response.json() if alerts_response.status_code == 200 else []
+            vendors = vendors_response.json() if vendors_response.status_code == 200 else []
             
-            vendor_performance_task = client.get(
-                f"{SUPABASE_URL}/rest/v1/vendor_rul_performance",
-                headers=headers,
-                params={"select": "*"}
-            )
+            total_assets = len(assets)
+            asset_by_type = {}
+            asset_by_status = {"active": 0, "under_maintenance": 0, "retired": 0, "not_installed": 0}
+            asset_by_condition = {"excellent": 0, "good": 0, "ok": 0, "critical": 0}
+            asset_by_location = {}
+            health_scores = []
             
-            regional_stats_task = client.get(
-                f"{SUPABASE_URL}/rest/v1/regional_rul_statistics",
-                headers=headers,
-                params={"select": "*"}
-            )
+            for asset in assets:
+                asset_type = asset.get("type", "Unknown")
+                asset_by_type[asset_type] = asset_by_type.get(asset_type, 0) + 1
+                
+                status = asset.get("status", "active")
+                if status in asset_by_status:
+                    asset_by_status[status] += 1
+                
+                condition = asset.get("condition", "ok")
+                if condition in asset_by_condition:
+                    asset_by_condition[condition] += 1
+                
+                location = asset.get("location", "Unknown")
+                asset_by_location[location] = asset_by_location.get(location, 0) + 1
+                
+                if asset.get("health_score"):
+                    health_scores.append(float(asset["health_score"]))
             
-            # Wait for all requests
-            import asyncio
-            responses = await asyncio.gather(
-                asset_health_task,
-                rul_analytics_task,
-                vendor_performance_task,
-                regional_stats_task,
-                return_exceptions=True
-            )
+            avg_health_score = sum(health_scores) / len(health_scores) if health_scores else 0
             
-            # Process responses
-            result = {
-                "asset_health_rul": [],
-                "rul_analytics": {},
-                "vendor_performance": [],
-                "regional_statistics": []
+            total_inspections = len(inspections)
+            inspections_by_month = {}
+            recent_inspections = []
+            
+            for inspection in inspections:
+                inspection_date = inspection.get("inspection_date")
+                if inspection_date:
+                    month = inspection_date[:7]
+                    inspections_by_month[month] = inspections_by_month.get(month, 0) + 1
+                    
+                    try:
+                        insp_datetime = datetime.fromisoformat(inspection_date.replace("Z", "+00:00"))
+                        if datetime.now(insp_datetime.tzinfo) - insp_datetime < timedelta(days=7):
+                            recent_inspections.append(inspection)
+                    except:
+                        pass
+            
+            total_alerts = len(alerts)
+            alerts_by_priority = {"high": 0, "medium": 0, "low": 0}
+            alerts_by_type = {}
+            unresolved_alerts = 0
+            
+            for alert in alerts:
+                priority = alert.get("priority", "medium")
+                if priority in alerts_by_priority:
+                    alerts_by_priority[priority] += 1
+                
+                alert_type = alert.get("type", "info")
+                alerts_by_type[alert_type] = alerts_by_type.get(alert_type, 0) + 1
+                
+                if not alert.get("resolved_at"):
+                    unresolved_alerts += 1
+            
+            total_vendors = len(vendors)
+            assets_per_vendor = {}
+            
+            for asset in assets:
+                vendor_id = asset.get("vendor_id")
+                if vendor_id:
+                    vendor_name = next((v["name"] for v in vendors if v["vendor_id"] == vendor_id), f"Vendor {vendor_id[:8]}")
+                    assets_per_vendor[vendor_name] = assets_per_vendor.get(vendor_name, 0) + 1
+            
+            return {
+                "summary": {
+                    "total_assets": total_assets,
+                    "total_inspections": total_inspections,
+                    "total_alerts": total_alerts,
+                    "total_vendors": total_vendors,
+                    "average_health_score": round(avg_health_score, 2),
+                    "unresolved_alerts": unresolved_alerts,
+                    "recent_inspections_7days": len(recent_inspections)
+                },
+                "assets": {
+                    "by_type": [{"name": k, "count": v} for k, v in asset_by_type.items()],
+                    "by_status": [{"name": k, "count": v} for k, v in asset_by_status.items()],
+                    "by_condition": [{"name": k, "count": v} for k, v in asset_by_condition.items()],
+                    "by_location": [{"name": k, "count": v} for k, v in sorted(asset_by_location.items(), key=lambda x: x[1], reverse=True)[:10]]
+                },
+                "inspections": {
+                    "by_month": [{"month": k, "count": v} for k, v in sorted(inspections_by_month.items())[-12:]],
+                    "total": total_inspections,
+                    "recent_count": len(recent_inspections)
+                },
+                "alerts": {
+                    "by_priority": [{"priority": k, "count": v} for k, v in alerts_by_priority.items()],
+                    "by_type": [{"type": k, "count": v} for k, v in alerts_by_type.items()],
+                    "total": total_alerts,
+                    "unresolved": unresolved_alerts,
+                    "resolved": total_alerts - unresolved_alerts
+                },
+                "vendors": {
+                    "total": total_vendors,
+                    "assets_per_vendor": [{"vendor": k, "count": v} for k, v in sorted(assets_per_vendor.items(), key=lambda x: x[1], reverse=True)[:10]]
+                }
             }
             
-            if not isinstance(responses[0], Exception) and responses[0].status_code == 200:
-                result["asset_health_rul"] = responses[0].json()
-            
-            if not isinstance(responses[1], Exception) and responses[1].status_code == 200:
-                data = responses[1].json()
-                result["rul_analytics"] = data[0] if data else {}
-            
-            if not isinstance(responses[2], Exception) and responses[2].status_code == 200:
-                result["vendor_performance"] = responses[2].json()
-            
-            if not isinstance(responses[3], Exception) and responses[3].status_code == 200:
-                result["regional_statistics"] = responses[3].json()
-            
-            return result
-            
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch analytics overview: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
