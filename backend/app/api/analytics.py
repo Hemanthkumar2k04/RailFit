@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer
+from fastapi.security.http import HTTPAuthorizationCredentials
 import httpx
 from typing import Dict, Any, List
 import asyncio
@@ -12,7 +13,7 @@ from app.core.config import settings
 SUPABASE_URL = settings.supabase_url
 SUPABASE_KEY = settings.supabase_anon_key
 
-async def verify_token(credentials: HTTPAuthCredentials = Depends(security)):
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     return credentials.credentials
 
 @router.get("/overview")
