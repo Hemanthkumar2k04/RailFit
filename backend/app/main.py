@@ -13,10 +13,11 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
@@ -28,6 +29,13 @@ app.include_router(mobile.router, prefix="/api/mobile")  # Results in /api/mobil
 app.include_router(dashboard.router)  # Results in /api/dashboard (defined in router)
 app.include_router(alerts.router, prefix="/api/alerts")
 app.include_router(analytics.router, prefix="/api/analytics")  # Results in /api/analytics/*
+
+# Add OPTIONS handler for CORS preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight OPTIONS requests"""
+    return {"message": "OK"}
+
 @app.get("/")
 async def root():
     """Root endpoint"""

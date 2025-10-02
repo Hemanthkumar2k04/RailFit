@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../config/api';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Activity, AlertTriangle, FileText, Package, TrendingUp, Users } from 'lucide-react';
+import { Activity, AlertTriangle, FileText, Package } from 'lucide-react';
 
 interface AnalyticsData {
   summary: {
@@ -162,7 +162,7 @@ const Analytics: React.FC = () => {
                 fill="#8884d8"
                 dataKey="count"
               >
-                {data.assets.by_type.map((entry, index) => (
+                {data.assets.by_type.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
