@@ -2,17 +2,29 @@
 -- This script inserts sample alert records into the alerts table
 -- Make sure to run this after you have assets in your database
 
--- First, let's get some asset IDs (replace these with actual asset_ids from your database)
--- Run this query first to get asset IDs: SELECT asset_id FROM assets LIMIT 20;
+-- First, check how many assets we have
+DO $$
+DECLARE
+    asset_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO asset_count FROM assets;
+    IF asset_count = 0 THEN
+        RAISE EXCEPTION 'No assets found in database. Please insert assets first.';
+    END IF;
+    RAISE NOTICE 'Found % assets in database', asset_count;
+END $$;
 
 -- Insert mock alerts with different priorities and types
--- IMPORTANT: Replace the asset_id values with actual UUIDs from your assets table
+-- This version uses COALESCE to fall back to any asset if specific types don't exist
 
 INSERT INTO alerts (asset_id, type, message, priority, acknowledged_by, acknowledged_at, resolved_at, metadata)
 VALUES
 -- Critical alerts (unresolved)
 (
-    (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 0),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 0),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 0)
+    ),
     'immediate_maintenance',
     'Health score dropped below 30%. Replacement recommended immediately.',
     'high',
@@ -22,7 +34,10 @@ VALUES
     '{"sensor_reading": 28, "threshold": 30, "location_details": "Platform 3, Section A"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 1),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 0),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 1)
+    ),
     'immediate_maintenance',
     'Severe wear detected. Risk of failure imminent.',
     'high',
@@ -32,7 +47,10 @@ VALUES
     '{"wear_level": 85, "max_wear": 80, "inspection_id": "INS-2024-001"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 2),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 0),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 2)
+    ),
     'immediate_maintenance',
     'RUL below critical threshold. Immediate maintenance required.',
     'high',
@@ -44,7 +62,10 @@ VALUES
 
 -- Predictive failure alerts (medium priority)
 (
-    (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 3),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 1),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 3)
+    ),
     'predictive_failure',
     'Anomaly detected in vibration pattern during last inspection.',
     'medium',
@@ -54,7 +75,10 @@ VALUES
     '{"vibration_level": 7.5, "normal_range": "3-6", "deviation": "25%"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 0),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 0),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 4)
+    ),
     'predictive_failure',
     'Predicted failure in next 30 days based on current degradation rate.',
     'medium',
@@ -64,7 +88,10 @@ VALUES
     '{"predicted_failure_date": "2025-11-01", "confidence": 0.87, "model_version": "v2.3"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 4),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 1),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 5)
+    ),
     'predictive_failure',
     'Warranty expires in 15 days. Schedule preventive inspection.',
     'medium',
@@ -76,7 +103,10 @@ VALUES
 
 -- Info alerts (low priority)
 (
-    (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 5),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 2),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 6)
+    ),
     'info',
     'Scheduled maintenance due in 7 days.',
     'low',
@@ -86,7 +116,10 @@ VALUES
     '{"next_maintenance": "2025-10-09", "maintenance_type": "routine", "estimated_duration": "2h"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 6),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 1),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 7)
+    ),
     'info',
     'New firmware update available for connected sensors.',
     'low',
@@ -98,7 +131,10 @@ VALUES
 
 -- Acknowledged but not resolved
 (
-    (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 7),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 2),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 8)
+    ),
     'immediate_maintenance',
     'Crack detected in mounting bracket. Investigation in progress.',
     'high',
@@ -108,7 +144,10 @@ VALUES
     '{"crack_size": "15mm", "location": "mounting_point_b", "inspector": "Field Team A"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 1),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 1),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 9)
+    ),
     'predictive_failure',
     'Unusual load distribution pattern detected.',
     'medium',
@@ -120,7 +159,10 @@ VALUES
 
 -- Resolved alerts (for history)
 (
-    (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 8),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 3),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 10)
+    ),
     'predictive_failure',
     'Minor misalignment detected and corrected.',
     'medium',
@@ -130,7 +172,10 @@ VALUES
     '{"misalignment": "2mm", "correction_applied": true, "follow_up_required": false}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 9),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 3),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 11)
+    ),
     'info',
     'Routine inspection completed successfully.',
     'low',
@@ -142,7 +187,10 @@ VALUES
 
 -- Additional critical alerts
 (
-    (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 10),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Liner' LIMIT 1 OFFSET 2),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 12)
+    ),
     'immediate_maintenance',
     'Temperature sensor reading abnormally high.',
     'high',
@@ -152,7 +200,10 @@ VALUES
     '{"temperature": 85, "normal_range": "20-60", "sensor_id": "TEMP-445"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 2),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Sleeper' LIMIT 1 OFFSET 2),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 13)
+    ),
     'immediate_maintenance',
     'Structural integrity compromised. Immediate replacement needed.',
     'high',
@@ -164,7 +215,10 @@ VALUES
 
 -- More predictive alerts
 (
-    (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 11),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Elastic Rail Clip' LIMIT 1 OFFSET 4),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 14)
+    ),
     'predictive_failure',
     'Corrosion detected in early stages. Monitor closely.',
     'medium',
@@ -174,7 +228,10 @@ VALUES
     '{"corrosion_level": 2, "max_level": 5, "environment": "high_humidity"}'::jsonb
 ),
 (
-    (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 12),
+    COALESCE(
+        (SELECT asset_id FROM assets WHERE type = 'Rail Pad' LIMIT 1 OFFSET 4),
+        (SELECT asset_id FROM assets LIMIT 1 OFFSET 15)
+    ),
     'predictive_failure',
     'Stress test indicates potential weakness developing.',
     'medium',
