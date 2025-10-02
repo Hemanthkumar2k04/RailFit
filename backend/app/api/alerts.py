@@ -47,8 +47,9 @@ async def get_alerts(
             }
             
             # Fetch alerts with asset information
+            # Note: Using simple select and then fetching asset info separately
             params = {
-                "select": "alert_id,type,message,priority,created_at,acknowledged_at,resolved_at,metadata,assets(asset_id,name,type,location)"
+                "select": "alert_id,asset_id,type,message,priority,created_at,acknowledged_at,resolved_at,metadata"
             }
             
             # Add filters based on query parameters
@@ -79,10 +80,29 @@ async def get_alerts(
             
             alerts_data = response.json()
             
+            # Fetch all unique asset IDs
+            asset_ids = list(set([alert["asset_id"] for alert in alerts_data if alert.get("asset_id")]))
+            
+            # Fetch asset information for all assets
+            assets_dict = {}
+            if asset_ids:
+                asset_params = {
+                    "select": "asset_id,name,type,location",
+                    "asset_id": f"in.({','.join(asset_ids)})"
+                }
+                asset_response = await client.get(
+                    f"{SUPABASE_URL}/rest/v1/assets",
+                    params=asset_params,
+                    headers=headers
+                )
+                if asset_response.status_code == 200:
+                    assets_list = asset_response.json()
+                    assets_dict = {asset["asset_id"]: asset for asset in assets_list}
+            
             # Transform data to frontend format
             formatted_alerts = []
             for alert in alerts_data:
-                asset = alert.get("assets", {})
+                asset = assets_dict.get(alert.get("asset_id"), {})
                 
                 # Determine status
                 status_text = "New"
