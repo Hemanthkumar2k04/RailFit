@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { API_ENDPOINTS } from '@/config/api'
+import { isTokenValid, clearAuthData } from '@/utils/jwt'
 
 // Types for authentication
 interface User {
@@ -65,20 +66,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const jwtToken = localStorage.getItem('jwt_token')
 
         if (authStatus === 'true' && userData && jwtToken) {
-            try {
-                const parsedUser = JSON.parse(userData)
-                // TODO: Validate JWT token with backend if needed
-                setUser(parsedUser)
-                setIsAuthenticated(true)
-            } catch (error) {
-                console.error('Error parsing user data:', error)
-                localStorage.removeItem('isAuthenticated')
-                localStorage.removeItem('user')
-                localStorage.removeItem('jwt_token')
+            // Check if JWT token is valid and not expired
+            if (isTokenValid(jwtToken)) {
+                try {
+                    const parsedUser = JSON.parse(userData)
+                    setUser(parsedUser)
+                    setIsAuthenticated(true)
+                } catch (error) {
+                    console.error('Error parsing user data:', error)
+                    clearAuthData()
+                }
+            } else {
+                // Token is expired or invalid, clear auth data
+                console.warn('JWT token expired on app load')
+                clearAuthData()
             }
         }
 
+        // Listen for JWT expiration events
+        const handleJWTExpired = () => {
+            console.warn('JWT expired, logging out user')
+            setUser(null)
+            setIsAuthenticated(false)
+            // Redirect will be handled by the component that detects !isAuthenticated
+        }
+
+        window.addEventListener('jwt_expired', handleJWTExpired)
+
+        // Setup periodic token expiration checking
+        const tokenCheckInterval = setInterval(() => {
+            const token = localStorage.getItem('jwt_token')
+            if (token && !isTokenValid(token)) {
+                handleJWTExpired()
+            }
+        }, 60000) // Check every minute
+
         setIsLoading(false)
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('jwt_expired', handleJWTExpired)
+            clearInterval(tokenCheckInterval)
+        }
     }, [])
 
     const login = async (email: string, password: string): Promise<boolean> => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../config/api';
 import { AlertTriangle, CheckCircle, Clock, X, MapPin, Package } from 'lucide-react';
+import { apiRequest } from '../../utils/api';
 
 type Alert = {
   alert_id: string;
@@ -30,7 +31,6 @@ export default function Alerts() {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('jwt_token');
       
       let url = `${API_BASE_URL}/api/alerts/`;
       const params = new URLSearchParams();
@@ -46,18 +46,13 @@ export default function Alerts() {
         url += `?${params.toString()}`;
       }
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch alerts');
+      const result = await apiRequest(url);
+      
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      setAlerts(data);
+      setAlerts(result.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -67,16 +62,12 @@ export default function Alerts() {
 
   const handleDismiss = async (alertId: string) => {
     try {
-      const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${API_BASE_URL}/api/alerts/${alertId}/dismiss`, {
+      const result = await apiRequest(`${API_BASE_URL}/api/alerts/${alertId}/dismiss`, {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to dismiss alert');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Refresh alerts after dismissing
