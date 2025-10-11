@@ -37,17 +37,39 @@ class Settings(BaseSettings):
         """Parse allowed origins from env var or use defaults"""
         if self._allowed_origins_str:
             return [origin.strip() for origin in self._allowed_origins_str.split(",") if origin.strip()]
-        # Build a sensible default list instead of using a wildcard.
-        # This allows both local development and deployed frontends to work
-        # without needing to toggle code between environments.
+        
+        # In debug mode, allow all localhost origins for easier development
+        if self.debug:
+            return [
+                "http://localhost:3000",
+                "http://localhost:4173", 
+                "http://localhost:5000",
+                "http://localhost:5173",
+                "http://localhost:8000",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:4173",
+                "http://127.0.0.1:5000", 
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:8000",
+                "https://rail-fit.vercel.app",  # Still allow production frontend
+                "https://railfit-production.up.railway.app",  # Still allow production backend
+            ]
+        
+        # Build a sensible default list for production
         origins: list[str] = []
 
         # Development localhosts (useful when debug=True)
         origins.extend([
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
+            "http://localhost:5173",  # Vite default
+            "http://127.0.0.1:5173",  # Vite default
+            "http://localhost:3000",  # React/Next.js default
+            "http://127.0.0.1:3000",  # React/Next.js default
+            "http://localhost:8000",  # FastAPI default
+            "http://127.0.0.1:8000",  # FastAPI default
+            "http://localhost:5000",  # Alternative FastAPI port
+            "http://127.0.0.1:5000",  # Alternative FastAPI port
+            "http://localhost:4173",  # Vite preview
+            "http://127.0.0.1:4173",  # Vite preview
         ])
 
         # Use explicit FRONTEND_URL if provided (recommended in production)
