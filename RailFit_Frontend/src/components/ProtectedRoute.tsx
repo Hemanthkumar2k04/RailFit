@@ -8,9 +8,9 @@ interface ProtectedRouteProps {
   requiredRole?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole
 }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
@@ -18,7 +18,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     // Check JWT validity on route access
     const token = localStorage.getItem('jwt_token');
-    
+
     if (isAuthenticated && (!token || !isTokenValid(token))) {
       logout();
     }

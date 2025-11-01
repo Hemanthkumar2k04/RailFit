@@ -79,8 +79,8 @@ export default function InspectionsPage() {
 
   // Mobile detection utility
   const detectMobile = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-           (window.innerWidth <= 768);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768);
   };
 
   // QR Code scan handler
@@ -88,7 +88,7 @@ export default function InspectionsPage() {
     // Extract asset ID from QR code data
     // Assuming QR code contains asset ID directly or in a specific format
     let assetId = scannedData;
-    
+
     // If QR code contains JSON or specific format, parse it
     try {
       const parsed = JSON.parse(scannedData);
@@ -104,13 +104,13 @@ export default function InspectionsPage() {
       // Remove any prefix like "AST-" or similar if needed
       assetId = scannedData.trim();
     }
-    
+
     // Update form data with scanned asset ID
     setFormData(prev => ({ ...prev, asset_id: assetId }));
-    
+
     // Trigger asset details fetch
     handleAssetIdChange({ target: { value: assetId } } as any);
-    
+
     // Close QR scanner
     setShowQRScanner(false);
   };
@@ -126,7 +126,7 @@ export default function InspectionsPage() {
     fetchInspections();
     fetchAnalytics();
     setIsMobile(detectMobile());
-    
+
     // Add resize listener to detect mobile on window resize
     const handleResize = () => setIsMobile(detectMobile());
     window.addEventListener('resize', handleResize);
@@ -137,7 +137,7 @@ export default function InspectionsPage() {
     try {
       setError(null);
       const token = getAuthToken();
-      
+
       if (!token) {
         setError('Please log in to view inspections');
         return;
@@ -169,7 +169,7 @@ export default function InspectionsPage() {
   const fetchAnalytics = async () => {
     try {
       const token = getAuthToken();
-      
+
       if (!token) {
         return;
       }
@@ -201,7 +201,7 @@ export default function InspectionsPage() {
     setIsLoadingAsset(true);
     try {
       const token = getAuthToken();
-      
+
       if (!token) {
         setError('Please log in to fetch asset details');
         return;
@@ -225,7 +225,7 @@ export default function InspectionsPage() {
           status: asset.status,
           condition: asset.condition
         });
-        
+
         // Auto-fill location if not already filled
         if (asset.location && !formData.location) {
           setFormData(prev => ({ ...prev, location: asset.location }));
@@ -247,17 +247,17 @@ export default function InspectionsPage() {
   const handleAssetIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData({ ...formData, asset_id: value });
-    
+
     // Clear previous error when user starts typing
     if (error && error.includes('Asset')) {
       setError(null);
     }
-    
+
     // Debounce asset fetching
     const timeoutId = setTimeout(() => {
       fetchAssetDetails(value);
     }, 500);
-    
+
     return () => clearTimeout(timeoutId);
   };
 
@@ -268,7 +268,7 @@ export default function InspectionsPage() {
 
     try {
       const token = getAuthToken();
-      
+
       if (!token) {
         setError('Please log in to create inspections');
         setIsLoading(false);
@@ -281,7 +281,7 @@ export default function InspectionsPage() {
       formDataToSend.append('location', formData.location);
       formDataToSend.append('inspection_type', formData.inspection_type);
       formDataToSend.append('notes', formData.notes || '');
-      
+
       if (selectedImage) {
         formDataToSend.append('image', selectedImage);
       }
@@ -306,18 +306,18 @@ export default function InspectionsPage() {
       }
 
       const newInspection = await response.json();
-      
+
       // Add new inspection to the list
       setInspections([newInspection, ...inspections]);
-      
+
       // Reset form
       setShowCreateForm(false);
       setFormData({ asset_id: '', location: '', inspection_type: 'visual', notes: '' });
       setSelectedImage(null);
-      
+
       // Refresh analytics
       await fetchAnalytics();
-      
+
     } catch (error) {
       setError(`Failed to create inspection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -440,33 +440,29 @@ export default function InspectionsPage() {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'all' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
         >
           All Inspections
         </button>
         <button
           onClick={() => setFilter('defective')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'defective' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'defective' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
         >
           Defective
         </button>
         <button
           onClick={() => setFilter('non-defective')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'non-defective' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'non-defective' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
         >
           Non-Defective
         </button>
         <button
           onClick={() => setFilter('manual')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'manual' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'manual' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
         >
           Manual Review
         </button>
@@ -484,9 +480,8 @@ export default function InspectionsPage() {
                 <h3 className="font-semibold text-lg text-gray-900 truncate" title={inspection.inspection_id}>{inspection.inspection_id}</h3>
                 <p className="text-sm text-gray-600 truncate" title={inspection.asset_id}>{inspection.asset_id}</p>
               </div>
-              <span className={`text-right px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                resultStyles[inspection.result as keyof typeof resultStyles] || 'bg-gray-100 text-gray-800'
-              }`}>
+              <span className={`text-right px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${resultStyles[inspection.result as keyof typeof resultStyles] || 'bg-gray-100 text-gray-800'
+                }`}>
                 {resultIcons[inspection.result as keyof typeof resultIcons]}
                 {inspection.result}
               </span>
@@ -514,7 +509,7 @@ export default function InspectionsPage() {
                   <span className="text-xs font-bold">{(inspection.confidence_score * 100).toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${inspection.confidence_score * 100}%` }}
                   />
@@ -538,84 +533,84 @@ export default function InspectionsPage() {
                 View Details
               </button>
             </div>
-      {/* Inspection Details Modal */}
-      {selectedInspection && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Inspection Details</h2>
-              <button
-                className="text-gray-400 hover:text-gray-700 text-xl font-bold px-2"
-                onClick={() => setSelectedInspection(null)}
-                aria-label="Close"
-                type="button"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Inspection ID:</span>
-                  <span className="text-gray-900">{selectedInspection.inspection_id}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Asset ID:</span>
-                  <span className="text-gray-900">{selectedInspection.asset_id}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Inspector:</span>
-                  <span className="text-gray-900">{selectedInspection.inspector_name}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Location:</span>
-                  <span className="text-gray-900">{selectedInspection.location}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Date:</span>
-                  <span className="text-gray-900">{formatDate(selectedInspection.inspection_date)}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Type:</span>
-                  <span className="text-gray-900 capitalize">{selectedInspection.inspection_type}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Result:</span>
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${resultStyles[selectedInspection.result as keyof typeof resultStyles]}`}>{selectedInspection.result}</span>
-                </div>
-                {selectedInspection.confidence_score !== undefined && (
-                  <div className="flex gap-2 items-center">
-                    <span className="font-medium text-gray-700">AI Confidence:</span>
-                    <span className="text-gray-900">{(selectedInspection.confidence_score * 100).toFixed(0)}%</span>
+            {/* Inspection Details Modal */}
+            {selectedInspection && (
+              <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6 border-b flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">Inspection Details</h2>
+                    <button
+                      className="text-gray-400 hover:text-gray-700 text-xl font-bold px-2"
+                      onClick={() => setSelectedInspection(null)}
+                      aria-label="Close"
+                      type="button"
+                    >
+                      &times;
+                    </button>
                   </div>
-                )}
-                {selectedInspection.ai_prediction && (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-gray-700">AI Prediction:</span>
-                    <span className="text-gray-900">{selectedInspection.ai_prediction.prediction} ({(selectedInspection.ai_prediction.confidence * 100).toFixed(0)}% confidence, {(selectedInspection.ai_prediction.defect_probability * 100).toFixed(0)}% defect probability)</span>
+                  <div className="p-6 space-y-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Inspection ID:</span>
+                        <span className="text-gray-900">{selectedInspection.inspection_id}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Asset ID:</span>
+                        <span className="text-gray-900">{selectedInspection.asset_id}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Inspector:</span>
+                        <span className="text-gray-900">{selectedInspection.inspector_name}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Location:</span>
+                        <span className="text-gray-900">{selectedInspection.location}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Date:</span>
+                        <span className="text-gray-900">{formatDate(selectedInspection.inspection_date)}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Type:</span>
+                        <span className="text-gray-900 capitalize">{selectedInspection.inspection_type}</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Result:</span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${resultStyles[selectedInspection.result as keyof typeof resultStyles]}`}>{selectedInspection.result}</span>
+                      </div>
+                      {selectedInspection.confidence_score !== undefined && (
+                        <div className="flex gap-2 items-center">
+                          <span className="font-medium text-gray-700">AI Confidence:</span>
+                          <span className="text-gray-900">{(selectedInspection.confidence_score * 100).toFixed(0)}%</span>
+                        </div>
+                      )}
+                      {selectedInspection.ai_prediction && (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-gray-700">AI Prediction:</span>
+                          <span className="text-gray-900">{selectedInspection.ai_prediction.prediction} ({(selectedInspection.ai_prediction.confidence * 100).toFixed(0)}% confidence, {(selectedInspection.ai_prediction.defect_probability * 100).toFixed(0)}% defect probability)</span>
+                        </div>
+                      )}
+                      {selectedInspection.notes && (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-gray-700">Notes:</span>
+                          <span className="text-gray-900">{selectedInspection.notes}</span>
+                        </div>
+                      )}
+                      {selectedInspection.image_data && (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-gray-700">Image:</span>
+                          <img src={selectedInspection.image_data} alt="Inspection" className="w-40 h-40 object-cover rounded border" />
+                        </div>
+                      )}
+                      <div className="flex gap-2 items-center">
+                        <span className="font-medium text-gray-700">Created At:</span>
+                        <span className="text-gray-900">{formatDate(selectedInspection.created_at)}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-                {selectedInspection.notes && (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-gray-700">Notes:</span>
-                    <span className="text-gray-900">{selectedInspection.notes}</span>
-                  </div>
-                )}
-                {selectedInspection.image_data && (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-gray-700">Image:</span>
-                    <img src={selectedInspection.image_data} alt="Inspection" className="w-40 h-40 object-cover rounded border" />
-                  </div>
-                )}
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-700">Created At:</span>
-                  <span className="text-gray-900">{formatDate(selectedInspection.created_at)}</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            )}
           </div>
         ))}
       </div>
@@ -659,7 +654,7 @@ export default function InspectionsPage() {
                   <MapPin className="w-5 h-5" />
                   Asset Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -705,7 +700,7 @@ export default function InspectionsPage() {
                     <input
                       type="text"
                       value={assetDetails.location || formData.location}
-                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., Track Section A-1"
                     />
@@ -723,13 +718,12 @@ export default function InspectionsPage() {
                         disabled
                       />
                       {assetDetails.health_score && (
-                        <div className={`px-2 py-1 rounded text-xs font-medium ${
-                          assetDetails.health_score >= 70 ? 'bg-green-100 text-green-800' :
-                          assetDetails.health_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${assetDetails.health_score >= 70 ? 'bg-green-100 text-green-800' :
+                            assetDetails.health_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                          }`}>
                           {assetDetails.health_score >= 70 ? 'Good' :
-                           assetDetails.health_score >= 40 ? 'Fair' : 'Poor'}
+                            assetDetails.health_score >= 40 ? 'Fair' : 'Poor'}
                         </div>
                       )}
                     </div>
@@ -738,8 +732,8 @@ export default function InspectionsPage() {
 
                 {assetDetails.vendor_name && (
                   <div className="text-sm text-gray-600">
-                    <strong>Vendor:</strong> {assetDetails.vendor_name} | 
-                    <strong> Status:</strong> {assetDetails.status} | 
+                    <strong>Vendor:</strong> {assetDetails.vendor_name} |
+                    <strong> Status:</strong> {assetDetails.status} |
                     <strong> Condition:</strong> {assetDetails.condition}
                   </div>
                 )}
@@ -751,7 +745,7 @@ export default function InspectionsPage() {
                 </label>
                 <select
                   value={formData.inspection_type}
-                  onChange={(e) => setFormData({...formData, inspection_type: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, inspection_type: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="visual">Visual Inspection</option>
@@ -801,7 +795,7 @@ export default function InspectionsPage() {
                 </label>
                 <textarea
                   value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Add any additional observations..."
@@ -852,7 +846,7 @@ export default function InspectionsPage() {
           <Camera className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No inspections found</h3>
           <p className="text-gray-600 mb-4">
-            {filter === 'all' 
+            {filter === 'all'
               ? "Get started by creating your first inspection"
               : `No inspections match the "${filter}" filter`
             }

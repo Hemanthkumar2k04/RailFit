@@ -24,12 +24,12 @@ interface QRCodeData {
   qr_version: string;
 }
 
-export default function QRCodeDisplay({ 
-  assetId, 
-  assetType, 
-  size = 200, 
+export default function QRCodeDisplay({
+  assetId,
+  assetType,
+  size = 200,
   showControls = true,
-  className = "" 
+  className = ""
 }: QRCodeDisplayProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [qrData, setQrData] = useState<QRCodeData | null>(null);
@@ -152,7 +152,7 @@ export default function QRCodeDisplay({
               <QrCode className="h-4 w-4" />
               {isLoading ? 'Generating...' : 'View QR'}
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -167,8 +167,8 @@ export default function QRCodeDisplay({
         )}
 
         {!showControls && qrCodeUrl && (
-          <img 
-            src={qrCodeUrl} 
+          <img
+            src={qrCodeUrl}
             alt={`QR Code for ${assetType || 'Asset'}`}
             width={size}
             height={size}
@@ -200,18 +200,18 @@ export default function QRCodeDisplay({
                 </Button>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-6">
               {/* QR Code Image */}
               {qrCodeUrl && (
                 <div className="flex flex-col items-center space-y-4">
-                  <img 
-                    src={qrCodeUrl} 
+                  <img
+                    src={qrCodeUrl}
                     alt={`QR Code for ${assetType || 'Asset'}`}
                     className="border rounded-lg shadow-sm"
                     style={{ maxWidth: '300px', height: 'auto' }}
                   />
-                  
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"

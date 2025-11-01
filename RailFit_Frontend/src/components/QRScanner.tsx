@@ -31,7 +31,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
     if (isOpen && videoRef.current) {
       startScanner();
     }
-    
+
     return () => {
       if (scannerRef.current) {
         scannerRef.current.destroy();
@@ -142,7 +142,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
                   </div>
                 )}
               </div>
-              
+
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-2">
                   {isScanning ? 'Point your camera at a QR code' : 'Initializing camera...'}

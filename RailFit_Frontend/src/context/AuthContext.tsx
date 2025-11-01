@@ -48,13 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Role-based page access control
     const canAccessPage = (page: string): boolean => {
         if (!user) return false
-        
+
         // Inspectors cannot access assets, analytics, or alerts
         if (user.role === 'field_inspector') {
             const restrictedPages = ['assets', 'analytics', 'alerts']
             return !restrictedPages.includes(page)
         }
-        
+
         // Admins and managers can access all pages
         return true
     }
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             const data = await response.json()
-            
+
             if (data.access_token && data.user) {
                 const authenticatedUser: User = {
                     id: data.user.id,
@@ -161,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             const data = await response.json()
-            
+
             // Store JWT token and user data
             localStorage.setItem('jwt_token', data.access_token)
             localStorage.setItem('isAuthenticated', 'true')

@@ -59,7 +59,7 @@ export default function Dashboard() {
       { name: "Western Railways", status: "Online" }
     ]
   });
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -67,10 +67,10 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     setIsRefreshing(true);
-    
+
     try {
       const token = localStorage.getItem('jwt_token');
-      
+
       if (!token) {
         setIsRefreshing(false);
         return;
@@ -108,7 +108,7 @@ export default function Dashboard() {
       };
 
       setDashboard(dashboardMetrics);
-      
+
       setLastUpdated(new Date());
     } catch (error) {
       // Error fetching dashboard metrics
@@ -120,10 +120,10 @@ export default function Dashboard() {
   useEffect(() => {
     // Load initial data
     fetchDashboardData();
-    
+
     // Preload commonly accessed routes after dashboard loads
     preloadCommonRoutes();
-    
+
     // Auto-refresh dashboard every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
@@ -149,9 +149,9 @@ export default function Dashboard() {
             <span className="text-sm text-gray-500">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </span>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={fetchDashboardData}
               disabled={isRefreshing}
               className="flex items-center gap-2"
@@ -247,24 +247,24 @@ export default function Dashboard() {
               <div className="space-y-6">
                 {/* Health Bar */}
                 <div className="w-full h-5 bg-muted/20 rounded-full overflow-hidden flex shadow-inner">
-                  <div 
+                  <div
                     className="h-full bg-emerald-400 transition-all duration-1000 outline"
                     style={{ width: `${(dashboard.assetDistribution.excellent / dashboard.totalAssets) * 100}%` }}
                   />
-                  <div 
+                  <div
                     className="h-full bg-slate-400 transition-all duration-1000"
                     style={{ width: `${(dashboard.assetDistribution.good / dashboard.totalAssets) * 100}%` }}
                   />
-                  <div 
+                  <div
                     className="h-full bg-amber-400 transition-all duration-1000"
                     style={{ width: `${(dashboard.assetDistribution.ok / dashboard.totalAssets) * 100}%` }}
                   />
-                  <div 
+                  <div
                     className="h-full bg-rose-400 transition-all duration-1000"
                     style={{ width: `${(dashboard.assetDistribution.critical / dashboard.totalAssets) * 100}%` }}
                   />
                 </div>
-                
+
                 {/* Legend */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -314,18 +314,17 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Zone Status</h4>
                   {dashboard.zones.map((zone: { name: string; status: string }, i: number) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
                       <span className="font-medium text-sm">{zone.name}</span>
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          zone.status === 'Online' ? "bg-emerald-400 animate-pulse" : 
-                          zone.status === 'Offline' ? "bg-rose-400" : "bg-amber-400"
-                        }`} />
-                        <Badge 
+                        <div className={`w-2 h-2 rounded-full ${zone.status === 'Online' ? "bg-emerald-400 animate-pulse" :
+                            zone.status === 'Offline' ? "bg-rose-400" : "bg-amber-400"
+                          }`} />
+                        <Badge
                           variant={zone.status === 'Online' ? "secondary" : "outline"}
                           className="text-xs"
                         >
@@ -344,9 +343,8 @@ export default function Dashboard() {
         <div className="fixed bottom-6 right-6 z-50">
           <div className="relative">
             {/* Quick Actions */}
-            <div className={`absolute bottom-16 right-0 transition-all duration-300 ${
-              isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-            }`}>
+            <div className={`absolute bottom-16 right-0 transition-all duration-300 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+              }`}>
               <Button
                 onClick={() => {
                   setIsOpen(false);
@@ -363,9 +361,8 @@ export default function Dashboard() {
             {/* Main FAB */}
             <Button
               onClick={() => setIsOpen(!isOpen)}
-              className={`w-12 h-12 rounded-full shadow-lg transition-transform duration-200 ${
-                isOpen ? 'rotate-45' : 'rotate-0'
-              } hover:scale-110`}
+              className={`w-12 h-12 rounded-full shadow-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : 'rotate-0'
+                } hover:scale-110`}
             >
               <Plus />
             </Button>

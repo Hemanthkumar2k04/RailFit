@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ReferenceLine, AreaChart, Area, PieChart, Pie, Cell, RadarChart, 
+  ReferenceLine, AreaChart, Area, PieChart, Pie, Cell, RadarChart,
   Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 
@@ -211,7 +211,7 @@ const RULAnalyticsCard: React.FC<{ data: RULAnalytics }> = ({ data }) => {
           <div className="text-xs text-gray-500">Avg RUL (days)</div>
         </div>
       </div>
-      
+
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex justify-between text-sm text-gray-700">
           <span>Avg Health Score:</span>
@@ -259,13 +259,13 @@ const HeatmapChart: React.FC<{ data: HeatmapAsset[] }> = ({ data }) => {
       <div className="text-sm text-gray-600 mb-4">
         Coordinates: Latitude (Y) vs Longitude (X) | Color = Health Score
       </div>
-      
+
       <div className="relative h-96 bg-gray-100 rounded overflow-auto">
         <div className="relative w-full h-full">
           {data.map((asset, idx) => {
             const x = ((asset.lng - minLng) / (maxLng - minLng || 1)) * 100;
             const y = ((asset.lat - minLat) / (maxLat - minLat || 1)) * 100;
-            
+
             return (
               <div
                 key={asset.assetId ?? idx}
@@ -333,7 +333,7 @@ const AIAnalytics: React.FC = () => {
         supabaseApi.getAssetHealthRulSummary(),
         supabaseApi.getRulAnalytics()
       ]);
-      
+
       setAssets(assetsData || []);
       setRulAnalytics(rulData || {});
       setLastUpdate(new Date());
@@ -416,7 +416,7 @@ const AIAnalytics: React.FC = () => {
 
     // RUL distribution by _type
     const assetTypes = Array.from(new Set(normalized.map(a => a._type)));
-  const barData: RULDistribution[] = assetTypes.map(type => { 
+    const barData: RULDistribution[] = assetTypes.map(type => {
       const typeAssets = normalized.filter(a => a._type === type);
       return {
         assetType: type,
@@ -461,7 +461,7 @@ const AIAnalytics: React.FC = () => {
     for (let i = 23; i >= 0; i--) {
       const weekLabel = `Week ${24 - i}`;
       const weekData: any = { week: weekLabel };
-    assetTypes.forEach(type => { 
+      assetTypes.forEach(type => {
         const typeAssets = normalized.filter(a => a._type === type);
         const avgHealth = typeAssets.length > 0
           ? typeAssets.reduce((s, a) => s + (a._health || 0), 0) / typeAssets.length
@@ -570,23 +570,23 @@ const AIAnalytics: React.FC = () => {
                     <defs>
                       {assetTypes.map((type, idx) => (
                         <linearGradient key={type} id={`color${idx}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.1}/>
+                          <stop offset="5%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.8} />
+                          <stop offset="95%" stopColor={colors[type as string] ?? '#6366F1'} stopOpacity={0.1} />
                         </linearGradient>
                       ))}
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="week" 
-                      angle={-45} 
-                      textAnchor="end" 
+                    <XAxis
+                      dataKey="week"
+                      angle={-45}
+                      textAnchor="end"
                       height={80}
                       tick={{ fontSize: 12 }}
                     />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #d1d5db',
                         borderRadius: '8px',
                         padding: '12px'
@@ -619,15 +619,15 @@ const AIAnalytics: React.FC = () => {
                   <BarChart data={barData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis 
-                      type="category" 
-                      dataKey="assetType" 
+                    <YAxis
+                      type="category"
+                      dataKey="assetType"
                       width={120}
                       tick={{ fontSize: 12 }}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #d1d5db',
                         borderRadius: '8px',
                         padding: '12px'
@@ -667,15 +667,15 @@ const AIAnalytics: React.FC = () => {
                       dataKey="value"
                     >
                       {barData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={colors[entry.assetType] ?? '#6366F1'} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={colors[entry.assetType] ?? '#6366F1'}
                         />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #d1d5db',
                         borderRadius: '8px',
                         padding: '12px'
@@ -702,26 +702,26 @@ const AIAnalytics: React.FC = () => {
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="assetType" tick={{ fontSize: 11 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <Radar 
-                      name="Health Score" 
-                      dataKey="health" 
-                      stroke="#10B981" 
-                      fill="#10B981" 
+                    <Radar
+                      name="Health Score"
+                      dataKey="health"
+                      stroke="#10B981"
+                      fill="#10B981"
                       fillOpacity={0.5}
                       strokeWidth={2}
                     />
-                    <Radar 
-                      name="Reliability" 
-                      dataKey="reliability" 
-                      stroke="#3B82F6" 
-                      fill="#3B82F6" 
+                    <Radar
+                      name="Reliability"
+                      dataKey="reliability"
+                      stroke="#3B82F6"
+                      fill="#3B82F6"
                       fillOpacity={0.3}
                       strokeWidth={2}
                     />
                     <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #d1d5db',
                         borderRadius: '8px',
                         padding: '12px'
@@ -746,29 +746,29 @@ const AIAnalytics: React.FC = () => {
                 Interactive scatter plot showing the relationship between asset health and remaining useful life
               </div>
               <ResponsiveContainer width="100%" height={450}>
-                <ScatterChart 
+                <ScatterChart
                   data={scatterData}
                   margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="healthScore" 
-                    domain={[0, 100]} 
+                  <XAxis
+                    type="number"
+                    dataKey="healthScore"
+                    domain={[0, 100]}
                     name="Health Score"
                     tickCount={6}
                     label={{ value: 'Health Score', position: 'insideBottom', offset: -10 }}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    type="number" 
-                    dataKey="rulDays" 
+                  <YAxis
+                    type="number"
+                    dataKey="rulDays"
                     name="RUL (days)"
                     domain={[0, 'dataMax + 50']}
                     label={{ value: 'Remaining Useful Life (days)', angle: -90, position: 'insideLeft' }}
                     tick={{ fontSize: 12 }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ strokeDasharray: '3 3' }}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -781,12 +781,11 @@ const AIAnalytics: React.FC = () => {
                               <p className="text-sm text-gray-700"><span className="font-semibold">Location:</span> {data.location}</p>
                               <p className="text-sm text-gray-700"><span className="font-semibold">Health:</span> {data.healthScore.toFixed(1)}</p>
                               <p className="text-sm text-gray-700"><span className="font-semibold">RUL:</span> {data.rulDays} days</p>
-                              <p className={`text-sm font-semibold ${
-                                data.priority === 'Immediate' ? 'text-red-600' :
-                                data.priority === 'High' ? 'text-orange-600' :
-                                data.priority === 'Medium' ? 'text-yellow-600' :
-                                'text-green-600'
-                              }`}>Priority: {data.priority}</p>
+                              <p className={`text-sm font-semibold ${data.priority === 'Immediate' ? 'text-red-600' :
+                                  data.priority === 'High' ? 'text-orange-600' :
+                                    data.priority === 'Medium' ? 'text-yellow-600' :
+                                      'text-green-600'
+                                }`}>Priority: {data.priority}</p>
                               <p className="text-sm text-gray-700"><span className="font-semibold">Alerts:</span> {data.alertCount}</p>
                               <p className="text-sm text-gray-700"><span className="font-semibold">Vendor:</span> {data.vendor}</p>
                               {data.utilizationPercentage && (
@@ -802,11 +801,11 @@ const AIAnalytics: React.FC = () => {
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
                   <ReferenceLine x={50} stroke="#9ca3af" strokeDasharray="3 3" label="Avg Health" />
                   <ReferenceLine y={180} stroke="#9ca3af" strokeDasharray="3 3" label="Critical RUL" />
-                  
+
                   {Object.entries(priorityColors).map(([priority, color]) => {
                     const priorityData = scatterData.filter(d => d.priority === priority);
                     if (priorityData.length === 0) return null;
-                    
+
                     return (
                       <Scatter
                         key={priority}
@@ -822,11 +821,11 @@ const AIAnalytics: React.FC = () => {
                   })}
                 </ScatterChart>
               </ResponsiveContainer>
-              
+
               {/* Legend Description */}
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-xs text-gray-600">
-                  <span className="font-semibold">Quadrant Analysis:</span> Assets in the top-left quadrant (low health, high RUL) may need preventive maintenance. 
+                  <span className="font-semibold">Quadrant Analysis:</span> Assets in the top-left quadrant (low health, high RUL) may need preventive maintenance.
                   Bottom-right quadrant (high health, low RUL) indicates natural aging requiring scheduled replacement.
                 </p>
               </div>

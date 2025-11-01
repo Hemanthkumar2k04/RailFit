@@ -72,21 +72,21 @@ const regionOptions = [
     { value: 'Metro Railway Kolkata', label: 'Metro Railway Kolkata' }
 ]
 
-    const statusOptions = [
-        { value: '', label: 'All Status' },
-        { value: 'active', label: 'Active' },
-        { value: 'under_maintenance', label: 'Under Maintenance' },
-        { value: 'retired', label: 'Retired' },
-        { value: 'not_installed', label: 'Not Installed' }
-    ]
+const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'active', label: 'Active' },
+    { value: 'under_maintenance', label: 'Under Maintenance' },
+    { value: 'retired', label: 'Retired' },
+    { value: 'not_installed', label: 'Not Installed' }
+]
 
-    const conditionOptions = [
-        { value: '', label: 'All Conditions' },
-        { value: 'excellent', label: 'Excellent' },
-        { value: 'good', label: 'Good' },
-        { value: 'fair', label: 'Fair' },
-        { value: 'critical', label: 'Critical' }
-    ]// Types for API response
+const conditionOptions = [
+    { value: '', label: 'All Conditions' },
+    { value: 'excellent', label: 'Excellent' },
+    { value: 'good', label: 'Good' },
+    { value: 'fair', label: 'Fair' },
+    { value: 'critical', label: 'Critical' }
+]// Types for API response
 
 // Metadata structure stored in the database as JSON
 interface AssetMetadata {
@@ -224,7 +224,7 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
             if (!token) {
                 throw new Error('No authentication token found. Please log in again.')
             }
-            
+
             const payload = {
                 type: formData.type,
                 location: formData.location,
@@ -259,10 +259,10 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
             }
 
             const newAsset: Asset = await response.json()
-            
+
             onAssetAdded(newAsset)
             onClose()
-            
+
             // Reset form
             setFormData({
                 type: '',
@@ -550,10 +550,10 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
 
             setVendorLoading(true)
             setVendorError(null)
-            
+
             try {
                 const response = await apiCall(API_ENDPOINTS.VENDORS.BY_ID(asset.vendor_id))
-                
+
                 if (response.ok) {
                     const vendorData = await response.json()
                     setVendor(vendorData)
@@ -586,7 +586,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
         if (metadataValue !== undefined && metadataValue !== null) {
             return String(metadataValue)
         }
-        
+
         // Check if it's in technical_specs nested object
         const technicalSpecs = asset?.metadata?.technical_specs
         if (technicalSpecs && typeof technicalSpecs === 'object') {
@@ -595,12 +595,12 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                 return String(techValue)
             }
         }
-        
+
         // Then try fallback property on asset object (for backward compatibility)
         if (fallbackProperty && asset?.[fallbackProperty]) {
             return String(asset[fallbackProperty])
         }
-        
+
         return 'N/A'
     }
 
@@ -725,11 +725,10 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                         {asset.health_score && (
                                             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                                                 <div
-                                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                                        asset.health_score >= 90 ? 'bg-emerald-500' :
-                                                        asset.health_score >= 70 ? 'bg-slate-500' :
-                                                        asset.health_score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                                                    }`}
+                                                    className={`h-2 rounded-full transition-all duration-300 ${asset.health_score >= 90 ? 'bg-emerald-500' :
+                                                            asset.health_score >= 70 ? 'bg-slate-500' :
+                                                                asset.health_score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                                        }`}
                                                     style={{ width: `${asset.health_score}%` }}
                                                 />
                                             </div>
@@ -844,7 +843,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                                     {vendor.address && (
                                                         <p><span className="font-medium">Address:</span> {vendor.address}</p>
                                                     )}
-                                                    <div><span className="font-medium">Status:</span> 
+                                                    <div><span className="font-medium">Status:</span>
                                                         <Badge className={vendor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                                                             {vendor.is_active ? 'Active' : 'Inactive'}
                                                         </Badge>
@@ -863,7 +862,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {/* Financial Information */}
                                 {asset.purchase_cost && (
                                     <div>
@@ -890,12 +889,12 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                         <span className="text-sm font-medium text-gray-500">Model</span>
                                         <p className="font-semibold">{getMetadataField('model', 'model')}</p>
                                     </div>
-                                    
+
                                     <div>
                                         <span className="text-sm font-medium text-gray-500">Serial Number</span>
                                         <p className="font-mono text-sm">{getMetadataField('serial_number', 'serial_number')}</p>
                                     </div>
-                                    
+
                                     <div>
                                         <span className="text-sm font-medium text-gray-500">Manufacturer</span>
                                         <p className="font-semibold">{getMetadataField('manufacturer', 'manufacturer')}</p>
@@ -910,29 +909,29 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                             <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Material</span>
                                             <p className="mt-1 font-semibold text-gray-900">{getMetadataField('material')}</p>
                                         </div>
-                                        
+
                                         <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                                             <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Weight</span>
                                             <p className="mt-1 font-semibold text-gray-900">{getMetadataField('weight_kg')} kg</p>
                                         </div>
-                                        
+
                                         <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                                             <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Dimensions</span>
                                             <p className="mt-1 font-semibold text-gray-900">{getMetadataField('dimensions')}</p>
                                         </div>
-                                        
+
                                         <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                                             <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Tensile Strength</span>
                                             <p className="mt-1 font-semibold text-gray-900">{getMetadataField('tensile_strength')}</p>
                                         </div>
-                                        
+
                                         <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                                             <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Temperature Range</span>
                                             <p className="mt-1 font-semibold text-gray-900">{getMetadataField('temperature_range')}</p>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Description from Metadata */}
                                 {getMetadataField('description', 'description') !== 'N/A' && (
                                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-4">
@@ -940,7 +939,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                         <p className="mt-2 text-gray-800">{getMetadataField('description', 'description')}</p>
                                     </div>
                                 )}
-                                
+
                                 {/* Raw Metadata Display for Development */}
                                 {asset.metadata && Object.keys(asset.metadata).length > 0 && (
                                     <details className="mt-4">
@@ -954,7 +953,7 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                                 )}
                             </CardContent>
                         </Card>
-                        
+
                         {/* Technical Specifications - only if available and not in metadata */}
                         {asset.technical_specs && (
                             <Card className="lg:col-span-2">
@@ -1070,12 +1069,12 @@ export default function AssetList() {
         }
     }
 
-    
+
 
     const fetchAssets = async (page: number = 1, searchQuery: string = '', assetFilters: any = {}) => {
         setLoading(true)
         setError(null)
-        
+
         try {
             const token = localStorage.getItem('jwt_token')
             if (!token) {
@@ -1093,7 +1092,7 @@ export default function AssetList() {
             if (assetFilters.region) params.append('region', assetFilters.region)
             if (assetFilters.status) params.append('status', assetFilters.status)
             if (assetFilters.condition) params.append('condition', assetFilters.condition)
-            
+
             const response = await apiCall(`${API_ENDPOINTS.ASSETS.BASE}?${params}`)
 
             if (!response.ok) {
@@ -1152,7 +1151,7 @@ export default function AssetList() {
 
             // Get the PDF blob
             const blob = await response.blob()
-            
+
             // Create download link
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
@@ -1160,7 +1159,7 @@ export default function AssetList() {
             a.download = `RailFit_Report_${new Date().toISOString().split('T')[0]}.pdf`
             document.body.appendChild(a)
             a.click()
-            
+
             // Cleanup
             window.URL.revokeObjectURL(url)
             document.body.removeChild(a)
@@ -1215,7 +1214,7 @@ export default function AssetList() {
             )
             if (!matchesSearch) return false
         }
-        
+
         // Condition filter based on calculated health status
         if (filters.condition) {
             const calculatedCondition = getHealthStatus(asset.health_score).toLowerCase()
@@ -1223,7 +1222,7 @@ export default function AssetList() {
                 return false
             }
         }
-        
+
         return true
     })
 
@@ -1247,7 +1246,7 @@ export default function AssetList() {
         // Add the new asset to the beginning of the list
         setAssets(prev => [newAsset, ...prev])
         setPagination(prev => ({ ...prev, total: prev.total + 1 }))
-        
+
         // Optionally refresh the entire list to ensure data consistency
         // This is especially useful if other users might be adding assets simultaneously
         try {
@@ -1302,7 +1301,7 @@ export default function AssetList() {
             const JSZip = (await import('jszip')).default
             const QRCode = (await import('qrcode')).default
             const zip = new JSZip()
-            
+
             // Process each selected asset
             for (const assetId of selectedAssets) {
                 const asset = filteredAssets.find(a => a.asset_id === assetId)
@@ -1316,7 +1315,7 @@ export default function AssetList() {
                             status: asset.status,
                             health_score: asset.health_score || 'N/A'
                         }
-                        
+
                         // Create QR code with asset data
                         const qrDataUrl = await QRCode.toDataURL(JSON.stringify(assetData), {
                             width: 300,
@@ -1326,28 +1325,28 @@ export default function AssetList() {
                                 light: '#FFFFFF'
                             }
                         })
-                        
+
                         // Convert data URL to blob
                         const response = await fetch(qrDataUrl)
                         const blob = await response.blob()
-                        
+
                         // Add to ZIP with descriptive filename
                         const fileName = `QR_${asset.asset_id.slice(0, 8)}_${asset.type.replace(/\s+/g, '_')}.png`
                         zip.file(fileName, blob)
-                        
+
                     } catch (assetError) {
                         // Continue with other assets
                     }
                 }
             }
-            
+
             // Generate and download ZIP
-            const zipBlob = await zip.generateAsync({ 
+            const zipBlob = await zip.generateAsync({
                 type: 'blob',
                 compression: 'DEFLATE',
                 compressionOptions: { level: 6 }
             })
-            
+
             // Create download link
             const url = URL.createObjectURL(zipBlob)
             const link = document.createElement('a')
@@ -1357,10 +1356,10 @@ export default function AssetList() {
             link.click()
             document.body.removeChild(link)
             URL.revokeObjectURL(url)
-            
+
             // Clear selection after download
             setSelectedAssets([])
-            
+
         } catch (error) {
             alert('Failed to generate QR codes. Please try again.')
         }
@@ -1391,7 +1390,7 @@ export default function AssetList() {
         good: metrics?.assetDistribution?.good ?? 0,
         ok: metrics?.assetDistribution?.ok ?? 0,
         critical: metrics?.assetDistribution?.critical ?? 0
-      };
+    };
 
     return (
         <div className="p-6 space-y-6">
@@ -1402,21 +1401,21 @@ export default function AssetList() {
                     <p className="text-muted-foreground mt-1">Comprehensive railway infrastructure asset tracking and management</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button 
+                    <Button
                         className="bg-primary text-primary-foreground hover:bg-primary/90"
                         onClick={() => setShowAddAssetModal(true)}
                     >
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Asset
                     </Button>
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={() => setShowBulkImportModal(true)}
                     >
                         <Upload className="h-4 w-4 mr-2" />
                         Bulk Import
                     </Button>
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={generateReport}
                     >
@@ -1523,7 +1522,7 @@ export default function AssetList() {
                                 </Button>
                             </div>
                         </div>
-                        
+
                         {/* Filter Controls */}
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="flex flex-col md:flex-row gap-2 flex-1">
@@ -1538,7 +1537,7 @@ export default function AssetList() {
                                         </option>
                                     ))}
                                 </select>
-                                
+
                                 <select
                                     value={filters.region || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, region: e.target.value }))}
@@ -1550,7 +1549,7 @@ export default function AssetList() {
                                         </option>
                                     ))}
                                 </select>
-                                
+
                                 <select
                                     value={filters.status || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
@@ -1562,7 +1561,7 @@ export default function AssetList() {
                                         </option>
                                     ))}
                                 </select>
-                                
+
                                 <select
                                     value={filters.condition || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, condition: e.target.value }))}
@@ -1575,7 +1574,7 @@ export default function AssetList() {
                                     ))}
                                 </select>
                             </div>
-                            
+
                             {/* Bulk Actions */}
                             {selectedAssets.length > 0 && (
                                 <div className="flex items-center gap-2">
@@ -1661,8 +1660,8 @@ export default function AssetList() {
                                             <td className="py-3 px-2 text-xs align-middle whitespace-nowrap">{formatDate(asset.install_date)}</td>
                                             <td className="py-3 px-2 align-middle">
                                                 <div className="flex items-center gap-1">
-                                                    <Button 
-                                                        size="sm" 
+                                                    <Button
+                                                        size="sm"
                                                         variant="outline"
                                                         onClick={() => handleViewAsset(asset)}
                                                         className="text-xs px-2 py-1"
@@ -1670,7 +1669,7 @@ export default function AssetList() {
                                                         <Eye className="h-3 w-3 mr-1" />
                                                         View
                                                     </Button>
-                                                    <QRCodeDisplay 
+                                                    <QRCodeDisplay
                                                         assetId={asset.asset_id}
                                                         assetType={asset.type}
                                                         showControls={true}
@@ -1716,15 +1715,15 @@ export default function AssetList() {
                                             </Badge>
                                         </div>
                                         <div className="flex justify-between items-center mt-4 pt-3 border-t">
-                                            <Button 
-                                                size="sm" 
+                                            <Button
+                                                size="sm"
                                                 variant="outline"
                                                 onClick={() => handleViewAsset(asset)}
                                             >
                                                 <Eye className="h-4 w-4 mr-1" />
                                                 View
                                             </Button>
-                                            <QRCodeDisplay 
+                                            <QRCodeDisplay
                                                 assetId={asset.asset_id}
                                                 assetType={asset.type}
                                                 showControls={true}
@@ -1742,21 +1741,21 @@ export default function AssetList() {
                             Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total || 0)} of {pagination.total || 0} assets
                         </div>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 disabled={!pagination.has_prev || loading}
                                 onClick={() => handlePageChange(pagination.page - 1)}
                             >
                                 <ChevronLeft className="h-4 w-4" />
                                 Previous
                             </Button>
-                            
+
                             {/* Page numbers */}
                             {Array.from({ length: Math.min(5, pagination.total_pages || 0) }, (_, i) => {
                                 const pageNum = Math.max(1, pagination.page - 2) + i
                                 if (pageNum > (pagination.total_pages || 0)) return null
-                                
+
                                 return (
                                     <Button
                                         key={pageNum}
@@ -1769,10 +1768,10 @@ export default function AssetList() {
                                     </Button>
                                 )
                             })}
-                            
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 disabled={!pagination.has_next || loading}
                                 onClick={() => handlePageChange(pagination.page + 1)}
                             >
