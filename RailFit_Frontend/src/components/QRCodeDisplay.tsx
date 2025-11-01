@@ -84,7 +84,6 @@ export default function QRCodeDisplay({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate QR code';
       setError(errorMessage);
-      console.error('QR Code generation error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +112,7 @@ export default function QRCodeDisplay({
         URL.revokeObjectURL(url);
       }
     } catch (err) {
-      console.error('Download error:', err);
+      // Download error - silent fail
     }
   };
 

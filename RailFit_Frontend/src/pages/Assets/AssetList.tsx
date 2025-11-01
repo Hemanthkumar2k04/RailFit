@@ -283,7 +283,6 @@ function AddAssetModal({ isOpen, onClose, onAssetAdded }: {
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create asset')
-            console.error('Error creating asset:', err)
         } finally {
             setIsSubmitting(false)
         }
@@ -559,13 +558,10 @@ function AssetDetailModal({ asset, isOpen, onClose }: {
                     const vendorData = await response.json()
                     setVendor(vendorData)
                 } else {
-                    const errorText = await response.text()
-                    console.error('Failed to fetch vendor details:', response.status, errorText)
                     setVendorError(`Failed to load vendor details (${response.status})`)
                     setVendor(null)
                 }
             } catch (error) {
-                console.error('Error fetching vendor details:', error)
                 setVendorError('Network error while loading vendor details')
                 setVendor(null)
             } finally {
@@ -1070,7 +1066,7 @@ export default function AssetList() {
             const metricsData = await response.json()
             setMetrics(metricsData)
         } catch (error) {
-            console.error('Error fetching metrics:', error)
+            // Error fetching metrics
         }
     }
 
@@ -1119,7 +1115,6 @@ export default function AssetList() {
             })
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch assets')
-            console.error('Error fetching assets:', err)
         } finally {
             setLoading(false)
         }
@@ -1178,7 +1173,6 @@ export default function AssetList() {
             document.body.appendChild(successToast)
             setTimeout(() => document.body.removeChild(successToast), 3000)
         } catch (error) {
-            console.error('Error generating report:', error)
             const errorToast = document.createElement('div')
             errorToast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50'
             errorToast.textContent = 'Failed to generate report'
@@ -1259,7 +1253,6 @@ export default function AssetList() {
         try {
             await fetchAssets(1, searchTerm, filters)
         } catch (error) {
-            console.error('Error refreshing asset list:', error)
             // The UI will still show the new asset even if refresh fails
         }
     }
@@ -1343,7 +1336,6 @@ export default function AssetList() {
                         zip.file(fileName, blob)
                         
                     } catch (assetError) {
-                        console.error(`Error generating QR for asset ${asset.asset_id}:`, assetError)
                         // Continue with other assets
                     }
                 }
@@ -1370,7 +1362,6 @@ export default function AssetList() {
             setSelectedAssets([])
             
         } catch (error) {
-            console.error('Error generating bulk QR codes:', error)
             alert('Failed to generate QR codes. Please try again.')
         }
     }
@@ -1401,8 +1392,6 @@ export default function AssetList() {
         ok: metrics?.assetDistribution?.ok ?? 0,
         critical: metrics?.assetDistribution?.critical ?? 0
       };
-
-      console.log('Asset Distribution:', assetDistribution); // Temporary usage to avoid unused variable error
 
     return (
         <div className="p-6 space-y-6">

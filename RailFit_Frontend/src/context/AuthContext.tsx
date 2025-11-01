@@ -73,19 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setUser(parsedUser)
                     setIsAuthenticated(true)
                 } catch (error) {
-                    console.error('Error parsing user data:', error)
                     clearAuthData()
                 }
             } else {
                 // Token is expired or invalid, clear auth data
-                console.warn('JWT token expired on app load')
                 clearAuthData()
             }
         }
 
         // Listen for JWT expiration events
         const handleJWTExpired = () => {
-            console.warn('JWT expired, logging out user')
             setUser(null)
             setIsAuthenticated(false)
             // Redirect will be handled by the component that detects !isAuthenticated
@@ -121,7 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
 
             if (!response.ok) {
-                console.error('Login failed:', response.statusText)
                 return false
             }
 
@@ -146,7 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             return false
         } catch (error) {
-            console.error('Login error:', error)
             return false
         }
     }
@@ -162,8 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
 
             if (!response.ok) {
-                const errorData = await response.json()
-                console.error('Registration failed:', errorData)
                 return false
             }
 
@@ -187,7 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             return true
         } catch (error) {
-            console.error('Registration error:', error)
             return false
         }
     }

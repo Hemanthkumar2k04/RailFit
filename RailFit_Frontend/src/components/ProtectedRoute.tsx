@@ -20,7 +20,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const token = localStorage.getItem('jwt_token');
     
     if (isAuthenticated && (!token || !isTokenValid(token))) {
-      console.warn('Invalid or expired JWT detected, logging out');
       logout();
     }
   }, [isAuthenticated, logout, location.pathname]);

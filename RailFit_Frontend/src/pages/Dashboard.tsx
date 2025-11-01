@@ -70,15 +70,11 @@ export default function Dashboard() {
     
     try {
       const token = localStorage.getItem('jwt_token');
-      console.log('Dashboard: JWT token found:', !!token);
       
       if (!token) {
-        console.warn('Dashboard: No authentication token found');
         setIsRefreshing(false);
         return;
       }
-
-      console.log('Dashboard: Fetching metrics from API...');
       // Fetch metrics from the centralized endpoint
       const response = await fetch(API_ENDPOINTS.ASSETS.METRICS, {
         headers: {
@@ -87,17 +83,11 @@ export default function Dashboard() {
         },
       });
 
-      console.log('Dashboard: Metrics API response status:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Dashboard: Metrics API error response:', errorText);
         throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`);
       }
 
       const metrics = await response.json();
-
-      console.log('Dashboard: Metrics fetched from API:', metrics);
 
       const assetDistribution = {
         excellent: metrics.assetDistribution?.excellent || 0,
@@ -116,14 +106,12 @@ export default function Dashboard() {
         avgResponseTime: metrics.avgResponseTime || 1.5,
         zones: metrics.zones || []
       };
-      
-      console.log('Dashboard: Metrics to be set in state:', dashboardMetrics);
 
       setDashboard(dashboardMetrics);
       
       setLastUpdated(new Date());
     } catch (error) {
-      console.error('Dashboard: Error fetching dashboard metrics:', error);
+      // Error fetching dashboard metrics
     } finally {
       setIsRefreshing(false);
     }
@@ -141,8 +129,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAssetAdded = async (asset: any) => {
-    console.log('New asset added:', asset);
+  const handleAssetAdded = async () => {
     await fetchDashboardData();
   };
 

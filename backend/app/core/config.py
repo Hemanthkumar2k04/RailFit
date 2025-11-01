@@ -113,8 +113,6 @@ class Settings(BaseSettings):
                 missing.append(var)
         
         if missing:
-            print(f"Warning: Missing or placeholder values for: {', '.join(missing)}")
-            print("Please update your .env file with actual values for production use.")
             # Only raise error for critical missing vars in production
             if not self.debug and missing:
                 raise ValueError(f"Missing required environment variables: {', '.join(missing)}")

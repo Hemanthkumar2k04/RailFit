@@ -34,23 +34,13 @@ def load_model():
         model_path = os.path.join(project_root, 'ML_model', 'rail_defect_model.keras')
         model_path = os.path.abspath(model_path)
         
-        print(f"🔍 Looking for model at: {model_path}")
-        print(f"🔍 Path exists: {os.path.exists(model_path)}")
-        
         if os.path.exists(model_path):
-            print("📦 Loading TensorFlow model...")
             model = tf.keras.models.load_model(model_path)
             model_loaded = True
-            print(f"✅ Model loaded successfully!")
-            print(f"📊 Model input shape: {model.input_shape}")
         else:
-            print(f"❌ Model file not found at: {model_path}")
-            print(f"📁 Directory contents: {os.listdir(os.path.dirname(model_path)) if os.path.exists(os.path.dirname(model_path)) else 'Directory does not exist'}")
+            model_loaded = False
             
     except Exception as e:
-        print(f"❌ Failed to load model: {str(e)}")
-        import traceback
-        traceback.print_exc()
         model_loaded = False
 
 # Load model when module is imported
@@ -91,7 +81,6 @@ def predict_defect(image_data: bytes) -> dict:
                 "model_loaded": True
             }
             
-            print(f"🔍 AI Analysis: {result['prediction']} (confidence: {confidence:.3f})")
             return result
         else:
             # Fallback simulation mode
@@ -108,7 +97,6 @@ def predict_defect(image_data: bytes) -> dict:
             }
             
     except Exception as e:
-        print(f"❌ Prediction error: {str(e)}")
         return {
             "prediction": "Error",
             "confidence": 0.0,
@@ -134,8 +122,6 @@ async def get_current_user_from_token(credentials: HTTPAuthorizationCredentials 
 async def update_asset_last_inspection_date(client: httpx.AsyncClient, headers: dict, asset_id: str, inspection_date: str):
     """Update asset's last inspection date in metadata"""
     try:
-        print(f"📅 Updating last inspection date for asset {asset_id}")
-        
         # Get current asset to read existing metadata
         asset_response = await client.get(
             f"{SUPABASE_URL}/rest/v1/assets",
@@ -168,20 +154,10 @@ async def update_asset_last_inspection_date(client: httpx.AsyncClient, headers: 
                         "updated_at": datetime.utcnow().isoformat() + "Z"
                     }
                 )
-                
-                if update_response.status_code == 204:
-                    print(f"✅ Asset last inspection date updated successfully to {inspection_date}")
-                else:
-                    print(f"⚠️ Failed to update asset last inspection date: {update_response.status_code}")
-                    print(f"⚠️ Response: {update_response.text}")
-            else:
-                print(f"⚠️ Asset {asset_id} not found for last inspection date update")
-        else:
-            print(f"⚠️ Failed to fetch current asset: {asset_response.status_code}")
             
     except Exception as e:
-        print(f"❌ Error updating asset last inspection date: {str(e)}")
         # Don't raise exception - metadata update failure shouldn't break inspection creation
+        pass
 
 @router.post("")
 async def create_inspection(
@@ -213,7 +189,6 @@ async def create_inspection(
         try:
             uuid.UUID(inspector_id)  # This will raise ValueError if not valid UUID
         except (ValueError, TypeError):
-            print(f"❌ Invalid inspector_id format: {inspector_id}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid inspector ID format"
@@ -225,8 +200,6 @@ async def create_inspection(
         
         # Process uploaded image
         if image and image.filename:
-            print(f"📸 Processing image: {image.filename} ({image.content_type})")
-            
             # Validate file type
             if not image.content_type.startswith('image/'):
                 raise HTTPException(
@@ -252,7 +225,7 @@ async def create_inspection(
             confidence_score = ai_prediction.get('confidence')
             
             if ai_prediction.get('prediction') == 'Error':
-                print(f"❌ AI prediction failed: {ai_prediction.get('error')}")
+                pass
         
         # Determine inspection result
         if ai_prediction and ai_prediction.get('prediction') != 'Error':
@@ -285,12 +258,6 @@ async def create_inspection(
             # Use the exact column name from your database: ai_predication (note spelling)
             inspection_data["ai_predication"] = ai_prediction
         
-        print(f"📋 Prepared inspection data: {inspection_id}")
-        print(f"📋 Data keys: {list(inspection_data.keys())}")
-        print(f"📋 Inspector ID: {current_user['user_id']}")
-        print(f"📋 Asset ID: {asset_id}")
-        print(f"📋 Result: {result}")
-        
         # Store in Supabase
         async with httpx.AsyncClient(timeout=30.0) as client:  # Add timeout
             headers = {
@@ -299,10 +266,6 @@ async def create_inspection(
                 "Content-Type": "application/json",
                 "Prefer": "return=representation"  # Get the created record back
             }
-            
-            print(f"🚀 Sending request to Supabase...")
-            print(f"🔗 URL: {SUPABASE_URL}/rest/v1/inspections")
-            print(f"📋 Final data keys: {list(inspection_data.keys())}")
             
             response = await client.post(
                 f"{SUPABASE_URL}/rest/v1/inspections",

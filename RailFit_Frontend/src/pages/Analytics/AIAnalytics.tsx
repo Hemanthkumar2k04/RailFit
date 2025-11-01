@@ -339,7 +339,6 @@ const AIAnalytics: React.FC = () => {
       setLastUpdate(new Date());
       setError(null);
     } catch (err: any) {
-      console.error('Error fetching data:', err);
       setError(err.message || 'Failed to fetch data');
     } finally {
       setLoading(false);

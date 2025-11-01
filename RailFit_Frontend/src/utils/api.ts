@@ -76,7 +76,6 @@ export async function apiRequest<T = any>(
     };
 
   } catch (error) {
-    console.error('API request failed:', error);
     return {
       status: 0,
       error: error instanceof Error ? error.message : 'Network error'
@@ -93,9 +92,6 @@ export function handleTokenExpiration(): void {
   
   // Dispatch custom event that AuthContext can listen to
   window.dispatchEvent(new CustomEvent('jwt_expired'));
-  
-  // Show user-friendly message
-  console.warn('Session expired. Please login again.');
   
   // Optional: Show a toast notification if you have a toast system
   // toast.warning('Your session has expired. Please login again.');

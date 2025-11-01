@@ -85,8 +85,6 @@ export default function InspectionsPage() {
 
   // QR Code scan handler
   const handleQRScan = (scannedData: string) => {
-    console.log('QR Code scanned:', scannedData);
-    
     // Extract asset ID from QR code data
     // Assuming QR code contains asset ID directly or in a specific format
     let assetId = scannedData;
@@ -164,7 +162,6 @@ export default function InspectionsPage() {
       const data = await response.json();
       setInspections(data);
     } catch (error) {
-      console.error('Error fetching inspections:', error);
       setError('Failed to load inspections. Please try again.');
     }
   };
@@ -190,7 +187,6 @@ export default function InspectionsPage() {
         setAnalytics(data);
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       // Analytics failure shouldn't block the main functionality
     }
   };
@@ -241,7 +237,6 @@ export default function InspectionsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching asset details:', error);
       setAssetDetails({});
     } finally {
       setIsLoadingAsset(false);
@@ -324,7 +319,6 @@ export default function InspectionsPage() {
       await fetchAnalytics();
       
     } catch (error) {
-      console.error('Error creating inspection:', error);
       setError(`Failed to create inspection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);

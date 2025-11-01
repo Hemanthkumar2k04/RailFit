@@ -26,7 +26,6 @@ export function decodeJWT(token: string): JWTPayload | null {
     
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Failed to decode JWT:', error);
     return null;
   }
 }
@@ -46,7 +45,6 @@ export function isTokenExpired(token: string): boolean {
     // Add 30 second buffer to account for network delays
     return currentTime >= (expirationTime - 30000);
   } catch (error) {
-    console.error('Error checking token expiration:', error);
     return true;
   }
 }
@@ -64,7 +62,6 @@ export function getTimeUntilExpiration(token: string): number {
     
     return Math.max(0, expirationTime - currentTime);
   } catch (error) {
-    console.error('Error calculating expiration time:', error);
     return 0;
   }
 }

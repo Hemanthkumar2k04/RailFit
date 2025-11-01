@@ -16,7 +16,6 @@ export const useJWTExpiration = () => {
     if (isAuthenticated) {
       const token = localStorage.getItem('jwt_token');
       if (!token || !isTokenValid(token)) {
-        console.warn('JWT expired or invalid, logging out');
         logout();
         navigate('/login', { replace: true });
         return;
@@ -25,7 +24,6 @@ export const useJWTExpiration = () => {
 
     // Listen for JWT expiration events from the API layer
     const handleJWTExpired = () => {
-      console.warn('JWT expired event received');
       if (isAuthenticated) {
         logout();
         navigate('/login', { replace: true });

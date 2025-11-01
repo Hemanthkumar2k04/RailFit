@@ -9,7 +9,6 @@ const loadQrScanner = async () => {
   try {
     return QrScanner;
   } catch (error) {
-    console.error('Failed to load QR scanner:', error);
     return null;
   }
 };
@@ -64,7 +63,6 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
         scannerRef.current = new QrScanner(
           videoRef.current,
           (result: any) => {
-            console.log('QR Code scanned:', result.data);
             onScan(result.data);
             stopScanner();
           },
@@ -79,7 +77,6 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, isOpen })
         setIsScanning(true);
       }
     } catch (err: any) {
-      console.error('Failed to start QR scanner:', err);
       setError(err.message || 'Failed to access camera');
       setIsScanning(false);
     }
