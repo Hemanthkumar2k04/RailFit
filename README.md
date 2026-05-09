@@ -16,7 +16,7 @@ RailFit is an intelligent railway asset management system designed to track, mon
 ### ✨ Key Features
 
 - 🔍 **QR Code Asset Tracking** - Unique identification for every component
-- 📊 **Real-time Health Monitoring** - AI-powered health scoring and RUL prediction  
+- 📊 **Real-time Health Monitoring** - AI-powered health scoring and RUL prediction
 - ⚡ **Predictive Maintenance** - Smart alerts before component failure
 - 👥 **Role-based Access Control** - Admin, Manager, and Field Inspector roles
 - 🔗 **API Integration** - Seamless sync with UDM and TMS systems
@@ -156,11 +156,13 @@ SIH/
 ## 🔗 API Endpoints
 
 ### Authentication
+
 - `POST /auth/register` - User registration
 - `POST /auth/login` - User login
 - `POST /auth/refresh` - Token refresh
 
 ### Asset Management
+
 - `GET /assets/` - List all assets
 - `POST /assets/` - Create new asset
 - `GET /assets/{asset_id}` - Get asset details
@@ -169,11 +171,13 @@ SIH/
 - `GET /assets/{asset_id}/qr-code` - Generate QR code
 
 ### Inspections
+
 - `GET /inspections/` - List inspections
 - `POST /inspections/` - Create inspection
 - `GET /inspections/asset/{asset_id}` - Asset inspections
 
 ### Alerts & Analytics
+
 - `GET /alerts/` - Active alerts
 - `POST /alerts/acknowledge` - Acknowledge alert
 - `GET /analytics/dashboard` - Dashboard metrics
@@ -184,35 +188,37 @@ SIH/
 
 ### Core Entities
 
-| Entity | Description | Key Fields |
-|--------|-------------|------------|
-| **Users** | System users with role-based access | `user_id`, `name`, `email`, `role`, `last_active` |
-| **Assets** | Railway components being tracked | `asset_id`, `type`, `location`, `health_score`, `predicted_rul` |
-| **Inspections** | Field inspection records | `inspection_id`, `asset_id`, `inspector_id`, `condition_rating` |
-| **Vendors** | Component suppliers | `vendor_id`, `name`, `contact_info`, `warranty_terms` |
-| **Alerts** | Maintenance and failure alerts | `alert_id`, `asset_id`, `type`, `priority`, `acknowledged_at` |
-| **API Integrations** | External system sync logs | `integration_id`, `system`, `sync_status`, `sync_time` |
-| **Photos** | Asset and inspection images | `photo_id`, `asset_id`, `inspection_id`, `url` |
+| Entity               | Description                         | Key Fields                                                      |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------- |
+| **Users**            | System users with role-based access | `user_id`, `name`, `email`, `role`, `last_active`               |
+| **Assets**           | Railway components being tracked    | `asset_id`, `type`, `location`, `health_score`, `predicted_rul` |
+| **Inspections**      | Field inspection records            | `inspection_id`, `asset_id`, `inspector_id`, `condition_rating` |
+| **Vendors**          | Component suppliers                 | `vendor_id`, `name`, `contact_info`, `warranty_terms`           |
+| **Alerts**           | Maintenance and failure alerts      | `alert_id`, `asset_id`, `type`, `priority`, `acknowledged_at`   |
+| **API Integrations** | External system sync logs           | `integration_id`, `system`, `sync_status`, `sync_time`          |
+| **Photos**           | Asset and inspection images         | `photo_id`, `asset_id`, `inspection_id`, `url`                  |
 
 ### Asset Types
+
 - **Elastic Rail Clip** - Rail fastening component
 - **Rail Pad** - Vibration dampening pad
-- **Liner** - Protective liner component  
+- **Liner** - Protective liner component
 - **Sleeper** - Railway sleeper/tie
 
 ## 👥 User Roles & Permissions
 
-| Role | Permissions | Description |
-|------|-------------|-------------|
-| **Admin** | Full system access | User management, system configuration, reports |
-| **Manager** | Asset & inspection management | View analytics, manage inspections, approve maintenance |
-| **Field Inspector** | Field operations | Create inspections, view assigned assets, capture photos |
+| Role                | Permissions                   | Description                                              |
+| ------------------- | ----------------------------- | -------------------------------------------------------- |
+| **Admin**           | Full system access            | User management, system configuration, reports           |
+| **Manager**         | Asset & inspection management | View analytics, manage inspections, approve maintenance  |
+| **Field Inspector** | Field operations              | Create inspections, view assigned assets, capture photos |
 
 ## 🛠️ Development
 
 ### Adding New Features
 
 1. **Backend (API Endpoint):**
+
    ```bash
    # Add to app/api/endpoints/
    # Update models in app/models/
@@ -221,6 +227,7 @@ SIH/
    ```
 
 2. **Frontend (Component):**
+
    ```bash
    # Add component in src/components/
    # Update routing in src/App.tsx
@@ -228,10 +235,11 @@ SIH/
    ```
 
 3. **Database Changes:**
+
    ```bash
    # Create migration
    alembic revision --autogenerate -m "Description"
-   
+
    # Apply migration
    alembic upgrade head
    ```
@@ -255,7 +263,8 @@ npm run lint
 
 ### Production Environment
 
-1. **Backend Deployment (Railway/Render):**
+1. **Backend Deployment (Render/Vercel):**
+
    ```bash
    # Set environment variables
    # Deploy from GitHub repository
@@ -263,10 +272,11 @@ npm run lint
    ```
 
 2. **Frontend Deployment (Vercel/Netlify):**
+
    ```bash
    # Build production bundle
    npm run build
-   
+
    # Deploy dist/ folder
    ```
 
@@ -278,6 +288,7 @@ npm run lint
 ### Environment Variables
 
 **Backend (.env):**
+
 ```env
 SUPABASE_URL=your-supabase-url
 SUPABASE_ANON_KEY=your-anon-key
@@ -289,6 +300,7 @@ ALLOWED_ORIGINS=https://your-frontend-domain.com
 ```
 
 **Frontend:**
+
 ```env
 VITE_API_BASE_URL=https://your-backend-api.com
 VITE_SUPABASE_URL=your-supabase-url
@@ -298,6 +310,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ## 🤝 Team Collaboration
 
 ### Git Workflow
+
 ```bash
 # Feature development
 git checkout -b feature/new-feature
@@ -309,11 +322,13 @@ git push origin feature/new-feature
 ```
 
 ### Database Changes
+
 - All team members use shared Supabase database
 - Local development can use the same cloud database
 - Migrations are versioned and shared via Git
 
 ### API Testing
+
 - Use Postman collection (available in `/docs`)
 - Test endpoints at `http://localhost:8000/docs`
 - Frontend can connect to shared backend
@@ -331,6 +346,7 @@ git push origin feature/new-feature
 ### Common Issues
 
 **Backend won't start:**
+
 ```bash
 # Check Python environment
 python --version
@@ -343,6 +359,7 @@ python -c "from app.core.config import settings; print(settings.database_url)"
 ```
 
 **Database connection fails:**
+
 ```bash
 # Test Supabase connection
 # Check .env configuration
@@ -350,6 +367,7 @@ python -c "from app.core.config import settings; print(settings.database_url)"
 ```
 
 **Frontend build errors:**
+
 ```bash
 # Clear node modules
 rm -rf node_modules package-lock.json

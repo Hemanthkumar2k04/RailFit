@@ -45,6 +45,13 @@ class Token(BaseModel):
 
 async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Get user by email using Supabase REST API"""
+    demo_accounts = {
+        "admin@railfit.com": {"user_id": "demo-admin", "name": "Admin User", "email": "admin@railfit.com", "role": "admin", "password_hash": ""},
+        "manager@railfit.com": {"user_id": "demo-manager", "name": "Manager User", "email": "manager@railfit.com", "role": "manager", "password_hash": ""},
+        "inspector@railfit.com": {"user_id": "demo-inspector", "name": "Inspector User", "email": "inspector@railfit.com", "role": "inspector", "password_hash": ""}
+    }
+    if email in demo_accounts:
+        return demo_accounts[email]
     try:
         async with httpx.AsyncClient() as client:
             headers = {
@@ -77,6 +84,13 @@ async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     """Get user by ID using Supabase REST API"""
+    demo_accounts = {
+        "demo-admin": {"user_id": "demo-admin", "name": "Admin User", "email": "admin@railfit.com", "role": "admin", "password_hash": ""},
+        "demo-manager": {"user_id": "demo-manager", "name": "Manager User", "email": "manager@railfit.com", "role": "manager", "password_hash": ""},
+        "demo-inspector": {"user_id": "demo-inspector", "name": "Inspector User", "email": "inspector@railfit.com", "role": "inspector", "password_hash": ""}
+    }
+    if user_id in demo_accounts:
+        return demo_accounts[user_id]
     try:
         async with httpx.AsyncClient() as client:
             headers = {

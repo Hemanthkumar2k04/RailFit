@@ -273,9 +273,10 @@ test_*.py
 sample_data/
 example.jpg
 
-# Railway deployment
-railway.json
-
+# Deployment
+.vercel/
+vercel.json
+.agents/
 # Package locks (optional - uncomment if you want to ignore them)
 # package-lock.json
 # yarn.lock
